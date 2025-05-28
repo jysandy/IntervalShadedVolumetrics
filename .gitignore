@@ -1,0 +1,7 @@
+vcpkg_installed/
+x64/ 
+.vs/
+imgui.ini
+PIXCaptures/
+Profiling/
+packages/

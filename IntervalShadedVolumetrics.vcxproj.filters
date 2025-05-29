@@ -59,5 +59,7 @@
     <None Include="vcpkg-configuration.json" />
     <None Include="vcpkg.json" />
     <None Include=".gitignore" />
+    <None Include="README.md" />
+    <None Include="LICENSE" />
   </ItemGroup>
 </Project>

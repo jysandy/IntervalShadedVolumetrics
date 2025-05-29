@@ -289,6 +289,8 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
+    <None Include="LICENSE" />
+    <None Include="README.md" />
     <None Include="vcpkg-configuration.json" />
     <None Include="vcpkg.json" />
   </ItemGroup>

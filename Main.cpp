@@ -5,6 +5,11 @@
 #include "pch.h"
 #include "Game.h"
 
+#include <directxtk12/Keyboard.h>
+#include <directxtk12/Mouse.h>
+
+#include "imgui_impl_win32.h"
+
 using namespace DirectX;
 
 #ifdef __clang__
@@ -51,7 +56,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     g_game = std::make_unique<Game>();
 
     // Register class and create window
-    {
+    
         // Register class
         WNDCLASSEXW wcex = {};
         wcex.cbSize = sizeof(WNDCLASSEXW);
@@ -84,32 +89,72 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         if (!hwnd)
             return 1;
 
-        ShowWindow(hwnd, nCmdShow);
-        // TODO: Change nCmdShow to SW_SHOWMAXIMIZED to default to fullscreen.
-
-        GetClientRect(hwnd, &rc);
-
-        g_game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
-    }
-
-    // Main message loop
-    MSG msg = {};
-    while (WM_QUIT != msg.message)
-    {
-        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+        try
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            {
+                IMGUI_CHECKVERSION();
+                ImGui::CreateContext();
+                ImGuiIO& io = ImGui::GetIO();
+
+                io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+                io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+                ImGui_ImplWin32_Init(hwnd);
+
+                ShowWindow(hwnd, nCmdShow);
+                // TODO: Change nCmdShow to SW_SHOWMAXIMIZED to default to fullscreen.
+
+                GetClientRect(hwnd, &rc);
+
+                g_game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
+            }
+
+            // Main message loop
+            MSG msg = {};
+            while (WM_QUIT != msg.message)
+            {
+                if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+                {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                }
+                else
+                {
+                    g_game->Tick();
+                }
+            }
+
+            g_game.reset();
+
+            CoUninitialize();
+
+            return static_cast<int>(msg.wParam);
         }
-        else
+        catch (std::exception e)
         {
-            g_game->Tick();
+            MessageBoxA(hwnd, e.what(), "Fatal error", MB_OK);
         }
-    }
 
-    g_game.reset();
+        g_game.reset();
+        CoUninitialize();
+        return 1;
+}
 
-    return static_cast<int>(msg.wParam);
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+inline void ProcessKeyboardMessage(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (ImGui::GetIO().WantCaptureKeyboard)
+        return;
+
+    Keyboard::ProcessMessage(message, wParam, lParam);
+}
+
+inline void ProcessMouseMessage(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (ImGui::GetIO().WantCaptureMouse)
+        return;
+    Mouse::ProcessMessage(message, wParam, lParam);
 }
 
 // Windows procedure
@@ -208,6 +253,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
 
+    case WM_ACTIVATE:
+        ProcessKeyboardMessage(message, wParam, lParam);
+        ProcessMouseMessage(message, wParam, lParam);
+        break;
+
     case WM_ACTIVATEAPP:
         if (game)
         {
@@ -220,6 +270,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 game->OnDeactivated();
             }
         }
+        ProcessKeyboardMessage(message, wParam, lParam);
+        ProcessMouseMessage(message, wParam, lParam);
         break;
 
     case WM_POWERBROADCAST:
@@ -279,6 +331,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             s_fullscreen = !s_fullscreen;
         }
+        ProcessKeyboardMessage(message, wParam, lParam);
+        break;
+
+    case WM_KEYDOWN:
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        ProcessKeyboardMessage(message, wParam, lParam);
+        break;
+
+    case WM_INPUT:
+    case WM_MOUSEMOVE:
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONUP:
+    case WM_MOUSEWHEEL:
+    case WM_XBUTTONDOWN:
+    case WM_XBUTTONUP:
+    case WM_MOUSEHOVER:
+        ProcessMouseMessage(message, wParam, lParam);
         break;
 
     case WM_MENUCHAR:

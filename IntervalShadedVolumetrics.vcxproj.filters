@@ -27,6 +27,11 @@
     <ClInclude Include="Gradient\Rendering\IDrawable.h" />
     <ClInclude Include="Gradient\ReadData.h" />
     <ClInclude Include="Gradient\PipelineState.h" />
+    <ClInclude Include="Gradient\Math.h" />
+    <ClInclude Include="Gradient\Camera.h" />
+    <ClInclude Include="Gradient\FreeMoveCamera.h" />
+    <ClInclude Include="imgui_impl_win32.h" />
+    <ClInclude Include="imgui_impl_dx12.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -41,6 +46,10 @@
     <ClCompile Include="Gradient\Rendering\ProceduralMesh.cpp" />
     <ClCompile Include="Gradient\BufferManager.cpp" />
     <ClCompile Include="Gradient\PipelineState.cpp" />
+    <ClCompile Include="Gradient\Camera.cpp" />
+    <ClCompile Include="Gradient\FreeMoveCamera.cpp" />
+    <ClCompile Include="imgui_impl_win32.cpp" />
+    <ClCompile Include="imgui_impl_dx12.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

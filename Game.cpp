@@ -39,6 +39,11 @@ Game::~Game()
 // Initialize the Direct3D resources required to run.
 void Game::Initialize(HWND window, int width, int height)
 {
+    m_keyboard = std::make_unique<Keyboard>();
+    m_mouse = std::make_unique<Mouse>();
+    m_mouse->SetWindow(window);
+    m_mouse->SetMode(DirectX::Mouse::MODE_ABSOLUTE);
+
     m_deviceResources->SetWindow(window, width, height);
 
     m_deviceResources->CreateDeviceResources();
@@ -72,6 +77,8 @@ void Game::Update(DX::StepTimer const& timer)
 {
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
 
+    m_camera.Update(timer);
+
     auto time = static_cast<float>(timer.GetTotalSeconds());
 
     m_world = Matrix::CreateRotationZ(cosf(time) * 2.f);
@@ -98,6 +105,8 @@ void Game::Render()
     PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"Render");
 
     m_effect->SetWorld(m_world);
+    m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
+    m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
 
     m_effect->Apply(commandList);
 
@@ -234,13 +243,7 @@ void Game::CreateWindowSizeDependentResources()
 {
     auto size = m_deviceResources->GetOutputSize();
 
-    m_view = Matrix::CreateLookAt(Vector3(2.f, 2.f, 2.f),
-        Vector3::Zero, Vector3::UnitY);
-    m_proj = Matrix::CreatePerspectiveFieldOfView(XM_PI / 4.f,
-        float(size.right) / float(size.bottom), 0.1f, 10.f);
-
-    m_effect->SetView(m_view);
-    m_effect->SetProjection(m_proj);
+    m_camera.SetAspectRatio((float)size.right / (float)size.bottom);
 }
 
 void Game::CleanupResources()

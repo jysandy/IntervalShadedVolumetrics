@@ -9,9 +9,13 @@
 
 #include <memory>
 
+#include <directxtk12/Keyboard.h>
+#include <directxtk12/Mouse.h>
 #include <directxtk12/SimpleMath.h>
 #include <directxtk12/Effects.h>
 #include <directxtk12/GeometricPrimitive.h>
+
+#include "Gradient/FreeMoveCamera.h"
 
 
 // A basic game implementation that creates a D3D12 device and
@@ -69,10 +73,11 @@ private:
     // Rendering loop timer.
     DX::StepTimer                               m_timer;
 
+    std::unique_ptr<DirectX::Keyboard> m_keyboard;
+    std::unique_ptr<DirectX::Mouse> m_mouse;
+    Gradient::FreeMoveCamera m_camera;
 
     DirectX::SimpleMath::Matrix m_world;
-    DirectX::SimpleMath::Matrix m_view;
-    DirectX::SimpleMath::Matrix m_proj;
 
     std::unique_ptr<DirectX::GeometricPrimitive> m_shape;
 

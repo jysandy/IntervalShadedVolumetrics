@@ -9,6 +9,12 @@
     "directx-headers",
     "directx12-agility",
     "directxmath",
-    "winpixevent"
+    "winpixevent",
+    "directxtk12",
+    {
+      "name": "imgui",
+      "version>=": "1.91.7"
+    },
+    "meshoptimizer"
   ]
 }

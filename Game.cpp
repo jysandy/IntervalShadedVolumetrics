@@ -5,9 +5,14 @@
 #include "pch.h"
 #include "Game.h"
 
+#include <directxtk12/CommonStates.h>
+
+#include "Gradient/GraphicsMemoryManager.h"
+
 extern void ExitGame() noexcept;
 
 using namespace DirectX;
+using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
 
@@ -27,6 +32,8 @@ Game::~Game()
     {
         m_deviceResources->WaitForGpu();
     }
+
+    CleanupResources();
 }
 
 // Initialize the Direct3D resources required to run.
@@ -65,10 +72,9 @@ void Game::Update(DX::StepTimer const& timer)
 {
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
 
-    float elapsedTime = float(timer.GetElapsedSeconds());
+    auto time = static_cast<float>(timer.GetTotalSeconds());
 
-    // TODO: Add your game logic here.
-    elapsedTime;
+    m_world = Matrix::CreateRotationZ(cosf(time) * 2.f);
 
     PIXEndEvent();
 }
@@ -91,7 +97,11 @@ void Game::Render()
     auto commandList = m_deviceResources->GetCommandList();
     PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"Render");
 
-    // TODO: Add your rendering code here.
+    m_effect->SetWorld(m_world);
+
+    m_effect->Apply(commandList);
+
+    m_shape->Draw(commandList);
 
     PIXEndEvent(commandList);
 
@@ -99,9 +109,8 @@ void Game::Render()
     PIXBeginEvent(m_deviceResources->GetCommandQueue(), PIX_COLOR_DEFAULT, L"Present");
     m_deviceResources->Present();
 
-    // If using the DirectX Tool Kit for DX12, uncomment this line:
-    // m_graphicsMemory->Commit(m_deviceResources->GetCommandQueue());
-
+    auto gmm = Gradient::GraphicsMemoryManager::Get();
+    gmm->Commit(m_deviceResources->GetCommandQueue());
     PIXEndEvent(m_deviceResources->GetCommandQueue());
 }
 
@@ -190,34 +199,61 @@ void Game::CreateDeviceDependentResources()
     auto device = m_deviceResources->GetD3DDevice();
 
     // Check Shader Model 6 support
-    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_0 };
+    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_8 };
     if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel)))
-        || (shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_0))
+        || (shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_8))
     {
 #ifdef _DEBUG
-        OutputDebugStringA("ERROR: Shader Model 6.0 is not supported!\n");
+        OutputDebugStringA("ERROR: Shader Model 6.8 is not supported!\n");
 #endif
-        throw std::runtime_error("Shader Model 6.0 is not supported!");
+        throw std::runtime_error("Shader Model 6.8 is not supported!");
     }
 
-    // If using the DirectX Tool Kit for DX12, uncomment this line:
-    // m_graphicsMemory = std::make_unique<GraphicsMemory>(device);
+    Gradient::GraphicsMemoryManager::Initialize(device);
 
-    // TODO: Initialize device dependent objects here (independent of window size).
+    RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(),
+        m_deviceResources->GetDepthBufferFormat());
+
+    EffectPipelineStateDescription pd(
+        &GeometricPrimitive::VertexType::InputLayout,
+        CommonStates::Opaque,
+        CommonStates::DepthDefault,
+        CommonStates::CullNone,
+        rtState);
+
+    m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd);
+    m_effect->EnableDefaultLighting();
+
+    m_shape = GeometricPrimitive::CreateBox({1, 1, 1});
+
+    m_world = Matrix::Identity;
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-    // TODO: Initialize windows-size dependent objects here.
+    auto size = m_deviceResources->GetOutputSize();
+
+    m_view = Matrix::CreateLookAt(Vector3(2.f, 2.f, 2.f),
+        Vector3::Zero, Vector3::UnitY);
+    m_proj = Matrix::CreatePerspectiveFieldOfView(XM_PI / 4.f,
+        float(size.right) / float(size.bottom), 0.1f, 10.f);
+
+    m_effect->SetView(m_view);
+    m_effect->SetProjection(m_proj);
+}
+
+void Game::CleanupResources()
+{
+    m_shape.reset();
+    m_effect.reset();
+    Gradient::GraphicsMemoryManager::Shutdown();
 }
 
 void Game::OnDeviceLost()
 {
     // TODO: Add Direct3D resource cleanup here.
-
-    // If using the DirectX Tool Kit for DX12, uncomment this line:
-    // m_graphicsMemory.reset();
+    CleanupResources();
 }
 
 void Game::OnDeviceRestored()

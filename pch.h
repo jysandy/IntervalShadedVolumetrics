@@ -66,6 +66,8 @@
 #include <dxgidebug.h>
 #endif
 
+#include <directxtk12/GraphicsMemory.h>
+
 #ifdef __MINGW32__
 constexpr UINT PIX_COLOR_DEFAULT = 0;
 

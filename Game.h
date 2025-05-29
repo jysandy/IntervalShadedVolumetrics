@@ -9,6 +9,10 @@
 
 #include <memory>
 
+#include <directxtk12/SimpleMath.h>
+#include <directxtk12/Effects.h>
+#include <directxtk12/GeometricPrimitive.h>
+
 
 // A basic game implementation that creates a D3D12 device and
 // provides a game loop.
@@ -44,6 +48,8 @@ public:
     void OnDisplayChange();
     void OnWindowSizeChanged(int width, int height);
 
+    void CleanupResources();
+
     // Properties
     void GetDefaultSize( int& width, int& height ) const noexcept;
 
@@ -63,6 +69,12 @@ private:
     // Rendering loop timer.
     DX::StepTimer                               m_timer;
 
-    // If using the DirectX Tool Kit for DX12, uncomment this line:
-    // std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
+
+    DirectX::SimpleMath::Matrix m_world;
+    DirectX::SimpleMath::Matrix m_view;
+    DirectX::SimpleMath::Matrix m_proj;
+
+    std::unique_ptr<DirectX::GeometricPrimitive> m_shape;
+
+    std::unique_ptr<DirectX::BasicEffect> m_effect;
 };

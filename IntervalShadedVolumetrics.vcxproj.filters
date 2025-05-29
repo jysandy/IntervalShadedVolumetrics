@@ -18,6 +18,15 @@
     <ClInclude Include="DeviceResources.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="Gradient\GraphicsMemoryManager.h" />
+    <ClInclude Include="Gradient\RootSignature.h" />
+    <ClInclude Include="Gradient\BufferManager.h" />
+    <ClInclude Include="Gradient\BarrierResource.h" />
+    <ClInclude Include="Gradient\FreeListAllocator.h" />
+    <ClInclude Include="Gradient\Rendering\ProceduralMesh.h" />
+    <ClInclude Include="Gradient\Rendering\IDrawable.h" />
+    <ClInclude Include="Gradient\ReadData.h" />
+    <ClInclude Include="Gradient\PipelineState.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -26,6 +35,12 @@
     <ClCompile Include="DeviceResources.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="Gradient\GraphicsMemoryManager.cpp" />
+    <ClCompile Include="Gradient\BarrierResource.cpp" />
+    <ClCompile Include="Gradient\RootSignature.cpp" />
+    <ClCompile Include="Gradient\Rendering\ProceduralMesh.cpp" />
+    <ClCompile Include="Gradient\BufferManager.cpp" />
+    <ClCompile Include="Gradient\PipelineState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

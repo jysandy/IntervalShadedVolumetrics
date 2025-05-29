@@ -14,6 +14,7 @@
 #include <directxtk12/SimpleMath.h>
 #include <directxtk12/Effects.h>
 #include <directxtk12/GeometricPrimitive.h>
+#include <directxtk12/CommonStates.h>
 
 #include "Gradient/FreeMoveCamera.h"
 
@@ -76,6 +77,8 @@ private:
     std::unique_ptr<DirectX::Keyboard> m_keyboard;
     std::unique_ptr<DirectX::Mouse> m_mouse;
     Gradient::FreeMoveCamera m_camera;
+    std::unique_ptr<DirectX::CommonStates> m_states;
+
 
     DirectX::SimpleMath::Matrix m_world;
 

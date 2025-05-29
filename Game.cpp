@@ -7,6 +7,10 @@
 
 #include <directxtk12/CommonStates.h>
 
+#include <imgui.h>
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
+
 #include "Gradient/GraphicsMemoryManager.h"
 
 extern void ExitGame() noexcept;
@@ -91,34 +95,71 @@ void Game::Update(DX::StepTimer const& timer)
 // Draws the scene.
 void Game::Render()
 {
+    auto gmm = Gradient::GraphicsMemoryManager::Get();
+
     // Don't try to render anything before the first Update.
     if (m_timer.GetFrameCount() == 0)
     {
         return;
     }
 
+
     // Prepare the command list to render a new frame.
     m_deviceResources->Prepare();
     Clear();
 
-    auto commandList = m_deviceResources->GetCommandList();
-    PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"Render");
+    auto cl = m_deviceResources->GetCommandList();
+
+    ID3D12DescriptorHeap* heaps[] = { gmm->GetSrvUavDescriptorHeap(), m_states->Heap() };
+    cl->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
+
+    D3D12_RECT scissorRect;
+    scissorRect.left = 0;
+    scissorRect.top = 0;
+    scissorRect.right = LONG_MAX; // Large value ensures no clipping
+    scissorRect.bottom = LONG_MAX;
+
+    cl->RSSetScissorRects(1, &scissorRect);
+
+
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Render");
 
     m_effect->SetWorld(m_world);
     m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
     m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
 
-    m_effect->Apply(commandList);
+    m_effect->Apply(cl);
 
-    m_shape->Draw(commandList);
+    m_shape->Draw(cl);
 
-    PIXEndEvent(commandList);
+    PIXEndEvent(cl);
+
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"GUI");
+
+    ImGui_ImplDX12_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("Performance");
+
+    float fps = m_timer.GetFramesPerSecond();
+
+    ImGui::Text("FPS: %.2f", fps);
+    ImGui::Text("msPF: %.2f", 1000.f / fps);
+
+    ImGui::End();
+
+
+    ImGui::Render();
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(),
+        cl);
+
+    PIXEndEvent(cl);
 
     // Show the new frame.
     PIXBeginEvent(m_deviceResources->GetCommandQueue(), PIX_COLOR_DEFAULT, L"Present");
     m_deviceResources->Present();
 
-    auto gmm = Gradient::GraphicsMemoryManager::Get();
     gmm->Commit(m_deviceResources->GetCommandQueue());
     PIXEndEvent(m_deviceResources->GetCommandQueue());
 }
@@ -195,7 +236,6 @@ void Game::OnWindowSizeChanged(int width, int height)
 // Properties
 void Game::GetDefaultSize(int& width, int& height) const noexcept
 {
-    // TODO: Change to desired default window size (note minimum size is 320x200).
     width = 1920;
     height = 1080;
 }
@@ -206,6 +246,7 @@ void Game::GetDefaultSize(int& width, int& height) const noexcept
 void Game::CreateDeviceDependentResources()
 {
     auto device = m_deviceResources->GetD3DDevice();
+    auto cq = m_deviceResources->GetCommandQueue();
 
     // Check Shader Model 6 support
     D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_8 };
@@ -236,6 +277,40 @@ void Game::CreateDeviceDependentResources()
     m_shape = GeometricPrimitive::CreateBox({1, 1, 1});
 
     m_world = Matrix::Identity;
+
+    m_states = std::make_unique<DirectX::CommonStates>(device);
+
+    // Initialize ImGUI
+
+    ImGui_ImplDX12_InitInfo initInfo = {};
+    initInfo.Device = device;
+    initInfo.CommandQueue = cq;
+    initInfo.NumFramesInFlight = 2;
+    initInfo.RTVFormat = m_deviceResources->GetBackBufferFormat();
+
+    auto gmm = Gradient::GraphicsMemoryManager::Get();
+    initInfo.SrvDescriptorHeap = gmm->GetSrvUavDescriptorHeap();
+    initInfo.SrvDescriptorAllocFn
+        = [](ImGui_ImplDX12_InitInfo*,
+            D3D12_CPU_DESCRIPTOR_HANDLE* outCpuHandle,
+            D3D12_GPU_DESCRIPTOR_HANDLE* outGpuHandle)
+        {
+            auto gmm = Gradient::GraphicsMemoryManager::Get();
+            auto index = gmm->AllocateSrvOrUav();
+            *outCpuHandle = gmm->GetSRVOrUAVCpuHandle(index);
+            *outGpuHandle = gmm->GetSRVOrUAVGpuHandle(index);
+        };
+    initInfo.SrvDescriptorFreeFn
+        = [](ImGui_ImplDX12_InitInfo*,
+            D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle,
+            D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+        {
+            auto gmm = Gradient::GraphicsMemoryManager::Get();
+            gmm->FreeSrvByCpuHandle(cpuHandle);
+        };
+
+
+    ImGui_ImplDX12_Init(&initInfo);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.

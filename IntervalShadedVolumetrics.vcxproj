@@ -183,7 +183,6 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\debug
       <FloatingPointModel>Fast</FloatingPointModel>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/Zc:__cplusplus /ZH:SHA_256 %(AdditionalOptions)</AdditionalOptions>
-      <GuardEHContMetadata>true</GuardEHContMetadata>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>

@@ -15,8 +15,10 @@
 #include <directxtk12/Effects.h>
 #include <directxtk12/GeometricPrimitive.h>
 #include <directxtk12/CommonStates.h>
+#include <directxtk12/PostProcess.h>
 
 #include "Gradient/FreeMoveCamera.h"
+#include "Gradient/Rendering/RenderTexture.h"
 
 
 // A basic game implementation that creates a D3D12 device and
@@ -63,7 +65,9 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
 
-    void Clear();
+    void ClearAndSetHDRTarget();
+    void ClearAndSetBackBufferTarget();
+
 
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
@@ -83,6 +87,7 @@ private:
     DirectX::SimpleMath::Matrix m_world;
 
     std::unique_ptr<DirectX::GeometricPrimitive> m_shape;
-
     std::unique_ptr<DirectX::BasicEffect> m_effect;
+    std::unique_ptr<Gradient::Rendering::RenderTexture> m_renderTarget;
+    std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapper;
 };

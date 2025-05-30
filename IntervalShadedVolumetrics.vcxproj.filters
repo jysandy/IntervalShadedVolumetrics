@@ -32,6 +32,8 @@
     <ClInclude Include="Gradient\FreeMoveCamera.h" />
     <ClInclude Include="imgui_impl_win32.h" />
     <ClInclude Include="imgui_impl_dx12.h" />
+    <ClInclude Include="Gradient\Rendering\RenderTexture.h" />
+    <ClInclude Include="Gradient\Rendering\TextureDrawer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -50,6 +52,8 @@
     <ClCompile Include="Gradient\FreeMoveCamera.cpp" />
     <ClCompile Include="imgui_impl_win32.cpp" />
     <ClCompile Include="imgui_impl_dx12.cpp" />
+    <ClCompile Include="Gradient\Rendering\RenderTexture.cpp" />
+    <ClCompile Include="Gradient\Rendering\TextureDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

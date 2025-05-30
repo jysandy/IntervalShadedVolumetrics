@@ -22,7 +22,13 @@ using Microsoft::WRL::ComPtr;
 
 Game::Game() noexcept(false)
 {
-    m_deviceResources = std::make_unique<DX::DeviceResources>();
+    m_deviceResources = std::make_unique<DX::DeviceResources>(
+        DXGI_FORMAT_B8G8R8A8_UNORM,
+        DXGI_FORMAT_D32_FLOAT,
+        2,
+        D3D_FEATURE_LEVEL_12_2,
+        DX::DeviceResources::c_AllowTearing
+    );
     // TODO: Provide parameters for swapchain format, depth/stencil format, and backbuffer count.
     //   Add DX::DeviceResources::c_AllowTearing to opt-in to variable rate displays.
     //   Add DX::DeviceResources::c_EnableHDR for HDR10 display.
@@ -106,7 +112,7 @@ void Game::Render()
 
     // Prepare the command list to render a new frame.
     m_deviceResources->Prepare();
-    Clear();
+    ClearAndSetHDRTarget();
 
     auto cl = m_deviceResources->GetCommandList();
 
@@ -131,6 +137,18 @@ void Game::Render()
     m_effect->Apply(cl);
 
     m_shape->Draw(cl);
+
+    PIXEndEvent(cl);
+
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"MSAA resolve and tonemap");
+
+    m_renderTarget->CopyToSingleSampled(cl);
+    ClearAndSetBackBufferTarget();
+
+
+    m_renderTarget->GetSingleSampledBarrierResource()->Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    m_tonemapper->SetHDRSourceTexture(m_renderTarget->GetSRV()->GetGPUHandle());
+    m_tonemapper->Process(cl);
 
     PIXEndEvent(cl);
 
@@ -165,10 +183,28 @@ void Game::Render()
 }
 
 // Helper method to clear the back buffers.
-void Game::Clear()
+void Game::ClearAndSetHDRTarget()
 {
     auto commandList = m_deviceResources->GetCommandList();
-    PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"Clear");
+    PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"ClearAndSetHDRTarget");
+
+    // Clear the views.
+
+    m_renderTarget->ClearAndSetAsTarget(commandList);
+
+    // Set the viewport and scissor rect.
+    const auto viewport = m_deviceResources->GetScreenViewport();
+    const auto scissorRect = m_deviceResources->GetScissorRect();
+    commandList->RSSetViewports(1, &viewport);
+    commandList->RSSetScissorRects(1, &scissorRect);
+
+    PIXEndEvent(commandList);
+}
+
+void Game::ClearAndSetBackBufferTarget()
+{
+    auto commandList = m_deviceResources->GetCommandList();
+    PIXBeginEvent(commandList, PIX_COLOR_DEFAULT, L"ClearAndSetBackBufferTarget");
 
     // Clear the views.
     const auto rtvDescriptor = m_deviceResources->GetRenderTargetView();
@@ -261,24 +297,18 @@ void Game::CreateDeviceDependentResources()
 
     Gradient::GraphicsMemoryManager::Initialize(device);
 
-    RenderTargetState rtState(m_deviceResources->GetBackBufferFormat(),
-        m_deviceResources->GetDepthBufferFormat());
-
-    EffectPipelineStateDescription pd(
-        &GeometricPrimitive::VertexType::InputLayout,
-        CommonStates::Opaque,
-        CommonStates::DepthDefault,
-        CommonStates::CullNone,
-        rtState);
-
-    m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd);
-    m_effect->EnableDefaultLighting();
-
     m_shape = GeometricPrimitive::CreateBox({1, 1, 1});
 
     m_world = Matrix::Identity;
 
     m_states = std::make_unique<DirectX::CommonStates>(device);
+
+    RenderTargetState backBufferRTState(m_deviceResources->GetBackBufferFormat(),
+        m_deviceResources->GetDepthBufferFormat());
+
+    m_tonemapper = std::make_unique<ToneMapPostProcess>(device, backBufferRTState,
+        ToneMapPostProcess::ACESFilmic,
+        ToneMapPostProcess::SRGB);
 
     // Initialize ImGUI
 
@@ -316,15 +346,42 @@ void Game::CreateDeviceDependentResources()
 // Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
-    auto size = m_deviceResources->GetOutputSize();
+    auto device = m_deviceResources->GetD3DDevice();
 
-    m_camera.SetAspectRatio((float)size.right / (float)size.bottom);
+    auto size = m_deviceResources->GetOutputSize();
+    auto width = static_cast<UINT>(size.right);
+    auto height = static_cast<UINT>(size.bottom);
+
+    m_camera.SetAspectRatio((float)width / (float)height);
+
+    m_renderTarget = std::make_unique<Gradient::Rendering::RenderTexture>(
+        device,
+        width,
+        height,
+        DXGI_FORMAT_R16G16B16A16_FLOAT,
+        true
+    );
+
+    RenderTargetState rtState(m_renderTarget->GetRenderTargetFormat(),
+        m_renderTarget->GetDepthBufferFormat(),
+        m_renderTarget->GetSampleCount());
+
+    EffectPipelineStateDescription pd(
+        &GeometricPrimitive::VertexType::InputLayout,
+        CommonStates::Opaque,
+        CommonStates::DepthDefault,
+        CommonStates::CullNone,
+        rtState);
+
+    m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd);
+    m_effect->EnableDefaultLighting();
 }
 
 void Game::CleanupResources()
 {
     m_shape.reset();
     m_effect.reset();
+    m_renderTarget.reset();
     Gradient::GraphicsMemoryManager::Shutdown();
 }
 

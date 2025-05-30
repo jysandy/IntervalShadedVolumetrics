@@ -258,6 +258,8 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     <ClInclude Include="Gradient\ReadData.h" />
     <ClInclude Include="Gradient\Rendering\IDrawable.h" />
     <ClInclude Include="Gradient\Rendering\ProceduralMesh.h" />
+    <ClInclude Include="Gradient\Rendering\RenderTexture.h" />
+    <ClInclude Include="Gradient\Rendering\TextureDrawer.h" />
     <ClInclude Include="Gradient\RootSignature.h" />
     <ClInclude Include="imgui_impl_dx12.h" />
     <ClInclude Include="imgui_impl_win32.h" />
@@ -274,6 +276,8 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     <ClCompile Include="Gradient\GraphicsMemoryManager.cpp" />
     <ClCompile Include="Gradient\PipelineState.cpp" />
     <ClCompile Include="Gradient\Rendering\ProceduralMesh.cpp" />
+    <ClCompile Include="Gradient\Rendering\RenderTexture.cpp" />
+    <ClCompile Include="Gradient\Rendering\TextureDrawer.cpp" />
     <ClCompile Include="Gradient\RootSignature.cpp" />
     <ClCompile Include="imgui_impl_dx12.cpp" />
     <ClCompile Include="imgui_impl_win32.cpp" />

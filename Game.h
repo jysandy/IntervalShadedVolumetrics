@@ -90,4 +90,5 @@ private:
     std::unique_ptr<DirectX::BasicEffect> m_effect;
     std::unique_ptr<Gradient::Rendering::RenderTexture> m_renderTarget;
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapper;
+    std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapperHDR10;
 };

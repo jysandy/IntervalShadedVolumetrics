@@ -23,11 +23,11 @@ using Microsoft::WRL::ComPtr;
 Game::Game() noexcept(false)
 {
     m_deviceResources = std::make_unique<DX::DeviceResources>(
-        DXGI_FORMAT_B8G8R8A8_UNORM,
+        DXGI_FORMAT_R10G10B10A2_UNORM,
         DXGI_FORMAT_D32_FLOAT,
         2,
         D3D_FEATURE_LEVEL_12_2,
-        DX::DeviceResources::c_AllowTearing
+        DX::DeviceResources::c_AllowTearing | DX::DeviceResources::c_EnableHDR
     );
     // TODO: Provide parameters for swapchain format, depth/stencil format, and backbuffer count.
     //   Add DX::DeviceResources::c_AllowTearing to opt-in to variable rate displays.
@@ -148,7 +148,20 @@ void Game::Render()
 
     m_renderTarget->GetSingleSampledBarrierResource()->Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     m_tonemapper->SetHDRSourceTexture(m_renderTarget->GetSRV()->GetGPUHandle());
-    m_tonemapper->Process(cl);
+    m_tonemapperHDR10->SetHDRSourceTexture(m_renderTarget->GetSRV()->GetGPUHandle());
+    
+
+    switch (m_deviceResources->GetColorSpace())
+    {
+    default:
+        m_tonemapper->Process(cl);
+        break;
+
+    case DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020:
+        m_tonemapperHDR10->Process(cl);
+        break;
+    }
+    
 
     PIXEndEvent(cl);
 
@@ -309,6 +322,11 @@ void Game::CreateDeviceDependentResources()
     m_tonemapper = std::make_unique<ToneMapPostProcess>(device, backBufferRTState,
         ToneMapPostProcess::ACESFilmic,
         ToneMapPostProcess::SRGB);
+
+    m_tonemapperHDR10 = std::make_unique<ToneMapPostProcess>(device,
+        backBufferRTState,
+        ToneMapPostProcess::None, 
+        ToneMapPostProcess::ST2084);
 
     // Initialize ImGUI
 

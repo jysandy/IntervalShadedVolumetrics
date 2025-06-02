@@ -19,6 +19,8 @@
 
 #include "Gradient/FreeMoveCamera.h"
 #include "Gradient/Rendering/RenderTexture.h"
+#include "Gradient/PipelineState.h"
+#include "Gradient/RootSignature.h"
 
 
 // A basic game implementation that creates a D3D12 device and
@@ -26,6 +28,14 @@
 class Game final : public DX::IDeviceNotify
 {
 public:
+    struct __declspec(align(16)) Constants
+    {
+        DirectX::XMMATRIX World;
+        DirectX::XMMATRIX View;
+        DirectX::XMMATRIX Proj;
+        float NearPlane;
+    };
+
 
     Game() noexcept(false);
     ~Game();
@@ -91,4 +101,7 @@ private:
     std::unique_ptr<Gradient::Rendering::RenderTexture> m_renderTarget;
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapper;
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapperHDR10;
+
+    Gradient::RootSignature m_tetRS;
+    std::unique_ptr<Gradient::PipelineState> m_tetPSO;
 };

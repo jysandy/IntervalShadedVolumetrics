@@ -6,8 +6,6 @@
       "host": true
     },
     "directx-dxc",
-    "directx-headers",
-    "directx12-agility",
     "directxmath",
     "winpixevent",
     "directxtk12",

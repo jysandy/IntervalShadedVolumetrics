@@ -75,4 +75,7 @@
     <None Include="README.md" />
     <None Include="LICENSE" />
   </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />
+  </ItemGroup>
 </Project>

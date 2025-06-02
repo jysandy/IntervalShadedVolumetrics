@@ -12,6 +12,7 @@
 #include "imgui_impl_dx12.h"
 
 #include "Gradient/GraphicsMemoryManager.h"
+#include "Gradient/ReadData.h"
 
 extern void ExitGame() noexcept;
 
@@ -90,8 +91,7 @@ void Game::Update(DX::StepTimer const& timer)
     m_camera.Update(timer);
 
     auto time = static_cast<float>(timer.GetTotalSeconds());
-
-    m_world = Matrix::CreateRotationZ(cosf(time) * 2.f);
+    m_world = Matrix::CreateScale(2) * Matrix::CreateRotationZ(cosf(time) * 2.f);
 
     PIXEndEvent();
 }
@@ -130,13 +130,25 @@ void Game::Render()
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Render");
 
-    m_effect->SetWorld(m_world);
-    m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
-    m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
+    //m_effect->SetWorld(m_world);
+    //m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
+    //m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
 
-    m_effect->Apply(cl);
+    //m_effect->Apply(cl);
 
-    m_shape->Draw(cl);
+    //m_shape->Draw(cl);
+
+    m_tetRS.SetOnCommandList(cl);
+    m_tetPSO->Set(cl, true);
+
+    Constants constants;
+    constants.World = m_world.Transpose();
+    constants.View = m_camera.GetCamera().GetViewMatrix().Transpose();
+    constants.Proj = m_camera.GetCamera().GetProjectionMatrix().Transpose();
+    constants.NearPlane = 0.1f;
+
+    m_tetRS.SetCBV(cl, 0, 0, constants);
+    cl->DispatchMesh(1, 1, 1);
 
     PIXEndEvent(cl);
 
@@ -308,6 +320,14 @@ void Game::CreateDeviceDependentResources()
         throw std::runtime_error("Shader Model 6.8 is not supported!");
     }
 
+    D3D12_FEATURE_DATA_D3D12_OPTIONS7 features = {};
+    if (FAILED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &features, sizeof(features)))
+        || (features.MeshShaderTier == D3D12_MESH_SHADER_TIER_NOT_SUPPORTED))
+    {
+        OutputDebugStringA("ERROR: Mesh Shaders aren't supported!\n");
+        throw std::exception("This application makes use of mesh shaders, which are not supported by this graphics device. The application will now exit.");
+    }
+
     Gradient::GraphicsMemoryManager::Initialize(device);
 
     m_shape = GeometricPrimitive::CreateBox({1, 1, 1});
@@ -359,6 +379,24 @@ void Game::CreateDeviceDependentResources()
 
 
     ImGui_ImplDX12_Init(&initInfo);
+
+    // PSO and root signature
+    m_tetRS.AddCBV(0, 0);
+    m_tetRS.Build(device);
+
+    D3DX12_MESH_SHADER_PIPELINE_STATE_DESC psoDesc = Gradient::PipelineState::GetDefaultMeshDesc();
+
+    auto msData = DX::ReadData(L"Tetrahedron_MS.cso");
+    auto psData = DX::ReadData(L"Interval_PS.cso");
+
+    psoDesc.pRootSignature = m_tetRS.Get();
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.MS = { msData.data(), msData.size() };
+    psoDesc.AS = {};
+    psoDesc.PS = { psData.data(), psData.size() };
+
+    m_tetPSO = std::make_unique<Gradient::PipelineState>(psoDesc);
+    m_tetPSO->Build(device);
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.

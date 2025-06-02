@@ -22,7 +22,7 @@ using namespace DirectX;
 extern "C"
 {
     // Used to enable the "Agility SDK" components
-    __declspec(dllexport) extern const UINT D3D12SDKVersion = D3D12_SDK_VERSION;
+    __declspec(dllexport) extern const UINT D3D12SDKVersion = 616;
     __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\";
 }
 

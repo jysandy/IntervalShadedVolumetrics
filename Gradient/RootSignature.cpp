@@ -108,7 +108,7 @@ namespace Gradient
 
         for (int i = 0; i < m_descRanges.size(); i++)
         {
-            CD3DX12_ROOT_PARAMETER1 rp;
+            CD3DX12_ROOT_PARAMETER1 rp = {};
             switch (m_descRanges[i].Type)
             {
             case ParameterTypes::RootCBV:

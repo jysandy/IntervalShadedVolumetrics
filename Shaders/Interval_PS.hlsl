@@ -1,7 +1,15 @@
 #include "TetrahedronPipeline.hlsli"
 
 
-float4 Interval_PS(VertexType input) : SV_Target
+struct BlendOutput
+{
+    float4 CScat : SV_Target0;
+    float4 Tv : SV_Target1;
+};
+
+static const float PI = 3.14159265359;
+
+BlendOutput Interval_PS(VertexType input)
 {
     float4 minpoint = float4(input.A.xy, input.A.z, 1.0);
     float4 maxpoint = float4(input.A.xy, input.A.w, 1.0);
@@ -11,7 +19,19 @@ float4 Interval_PS(VertexType input) : SV_Target
     a = a / a.w;
     b = b / b.w;
 
-    float3 absorption = 1.xxx - exp(-g_Density * g_Albedo * length(b - a));
+    BlendOutput ret;
     
-    return float4(absorption, 1.f);
+    float3 density = g_Density * (1.xxx - g_Albedo);
+    float opticalDepth = length(b - a);
+    
+    ret.Tv = float4(exp(-density * opticalDepth), 1);
+    
+    float phase = 1.f / (4 * PI);
+    float R = 5.f;
+    
+    float3 cscat = phase * R * (1.xxx - exp(-density * opticalDepth)) / density;
+
+    ret.CScat = float4(cscat, 1);
+    
+    return ret;
 }

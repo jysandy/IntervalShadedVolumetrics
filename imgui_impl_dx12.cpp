@@ -574,7 +574,7 @@ bool    ImGui_ImplDX12_CreateDeviceObjects()
     psoDesc.NumRenderTargets = 1;
     psoDesc.RTVFormats[0] = bd->RTVFormat;
     psoDesc.DSVFormat = bd->DSVFormat;
-    psoDesc.SampleDesc.Count = 1;
+    psoDesc.SampleDesc.Count = 4;
     psoDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
     ID3DBlob* vertexShaderBlob;
@@ -674,7 +674,7 @@ bool    ImGui_ImplDX12_CreateDeviceObjects()
         desc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
         desc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
         desc.DepthClipEnable = true;
-        desc.MultisampleEnable = FALSE;
+        desc.MultisampleEnable = TRUE;
         desc.AntialiasedLineEnable = FALSE;
         desc.ForcedSampleCount = 0;
         desc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;

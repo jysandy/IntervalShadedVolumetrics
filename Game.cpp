@@ -159,6 +159,34 @@ void Game::Render()
 
     PIXEndEvent(cl);
 
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"GUI");
+
+    ImGui_ImplDX12_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("Performance");
+
+    float fps = m_timer.GetFramesPerSecond();
+
+    ImGui::Text("FPS: %.2f", fps);
+    ImGui::Text("msPF: %.2f", 1000.f / fps);
+
+    ImGui::End();
+
+    ImGui::Begin("Material");
+
+    ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
+    ImGui::SliderFloat("Density", &m_guiDensity, 0, 10);
+
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(),
+        cl);
+
+    PIXEndEvent(cl);
+
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"MSAA resolve and tonemap");
 
     m_renderTarget->CopyToSingleSampled(cl);
@@ -181,35 +209,6 @@ void Game::Render()
         break;
     }
     
-
-    PIXEndEvent(cl);
-
-    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"GUI");
-
-    ImGui_ImplDX12_NewFrame();
-    ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::Begin("Performance");
-
-    float fps = m_timer.GetFramesPerSecond();
-
-    ImGui::Text("FPS: %.2f", fps);
-    ImGui::Text("msPF: %.2f", 1000.f / fps);
-
-    ImGui::End();
-
-    ImGui::Begin("Material");
-    
-    ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
-    ImGui::SliderFloat("Density", &m_guiDensity, 0, 10);
-
-    ImGui::End();
-
-
-    ImGui::Render();
-    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(),
-        cl);
 
     PIXEndEvent(cl);
 
@@ -368,7 +367,7 @@ void Game::CreateDeviceDependentResources()
     initInfo.Device = device;
     initInfo.CommandQueue = cq;
     initInfo.NumFramesInFlight = 2;
-    initInfo.RTVFormat = m_deviceResources->GetBackBufferFormat();
+    initInfo.RTVFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
     auto gmm = Gradient::GraphicsMemoryManager::Get();
     initInfo.SrvDescriptorHeap = gmm->GetSrvUavDescriptorHeap();

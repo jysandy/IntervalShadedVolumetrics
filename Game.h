@@ -33,6 +33,7 @@ public:
         DirectX::XMMATRIX World;
         DirectX::XMMATRIX View;
         DirectX::XMMATRIX Proj;
+        DirectX::XMMATRIX InverseViewProj;
         float NearPlane;
     };
 

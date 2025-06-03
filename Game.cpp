@@ -143,9 +143,13 @@ void Game::Render()
 
     Constants constants;
     constants.World = m_world.Transpose();
-    constants.View = (m_camera.GetCamera().GetViewMatrix() 
-        * Matrix::CreateScale({ -1, -1, -1 })).Transpose();
-    constants.Proj = (m_camera.GetCamera().GetProjectionMatrix()).Transpose();
+
+    auto view = m_camera.GetCamera().GetViewMatrix() * Matrix::CreateScale({ -1, -1, -1 });
+    auto proj = m_camera.GetCamera().GetProjectionMatrix();
+
+    constants.View = view.Transpose();
+    constants.Proj = proj.Transpose();
+    constants.InverseViewProj = (view * proj).Invert().Transpose();
     constants.NearPlane = 0.1f;
 
     m_tetRS.SetCBV(cl, 0, 0, constants);
@@ -394,6 +398,7 @@ void Game::CreateDeviceDependentResources()
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     // TODO: Maybe reverse the winding order in the mesh shader instead of doing this?
     psoDesc.RasterizerState = DirectX::CommonStates::CullNone;
+    psoDesc.BlendState = DirectX::CommonStates::Additive;
     psoDesc.MS = { msData.data(), msData.size() };
     psoDesc.PS = { psData.data(), psData.size() };
 

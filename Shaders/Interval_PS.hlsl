@@ -8,13 +8,13 @@ float4 Interval_PS(VertexType input) : SV_Target
 
 
     // TODO: FIXME by passing the inverse matrices as constants
-    //float4 a = inverse(persp * view) * minpoint;
-    //float4 b = inverse(persp * view) * maxpoint;
-    //a = a / a.w;
-    //b = b / b.w;
+    float4 a = mul(minpoint, g_InverseViewProj);
+    float4 b = mul(maxpoint, g_InverseViewProj);
+    a = a / a.w;
+    b = b / b.w;
 
 
-    float absorption = sqrt(length(maxpoint.z - minpoint.z));
+    float absorption = pow(1 - exp(-length(b - a)), 4) * 0.6;
     
-    return float4(absorption, absorption, absorption, 1.f);
+    return float4(absorption.xxx, 1.f);
 }

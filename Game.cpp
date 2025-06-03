@@ -151,6 +151,8 @@ void Game::Render()
     constants.Proj = proj.Transpose();
     constants.InverseViewProj = (view * proj).Invert().Transpose();
     constants.NearPlane = 0.1f;
+    constants.Albedo = m_guiAlbedo;
+    constants.Density = m_guiDensity;
 
     m_tetRS.SetCBV(cl, 0, 0, constants);
     cl->DispatchMesh(1, 1, 1);
@@ -194,6 +196,13 @@ void Game::Render()
 
     ImGui::Text("FPS: %.2f", fps);
     ImGui::Text("msPF: %.2f", 1000.f / fps);
+
+    ImGui::End();
+
+    ImGui::Begin("Material");
+    
+    ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
+    ImGui::SliderFloat("Density", &m_guiDensity, 0, 10);
 
     ImGui::End();
 

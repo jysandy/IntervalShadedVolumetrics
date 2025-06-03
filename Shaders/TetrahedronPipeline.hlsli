@@ -8,6 +8,8 @@ cbuffer Constants : register(b0, space0)
     float4x4 persp;
     float4x4 g_InverseViewProj;
     float nearplane;
+    float3 g_Albedo;
+    float g_Density;
 };
 
 struct VertexType

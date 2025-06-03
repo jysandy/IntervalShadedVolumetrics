@@ -35,6 +35,8 @@ public:
         DirectX::XMMATRIX Proj;
         DirectX::XMMATRIX InverseViewProj;
         float NearPlane;
+        DirectX::XMFLOAT3 Albedo;
+        float Density;
     };
 
 
@@ -105,4 +107,8 @@ private:
 
     Gradient::RootSignature m_tetRS;
     std::unique_ptr<Gradient::PipelineState> m_tetPSO;
+
+
+    DirectX::XMFLOAT3 m_guiAlbedo = { 0.8, 0.08, 0.08 };
+    float m_guiDensity = 1.f;
 };

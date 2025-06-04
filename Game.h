@@ -36,7 +36,15 @@ public:
         DirectX::XMMATRIX InverseViewProj;
         float NearPlane;
         DirectX::XMFLOAT3 Albedo;
+
         float Density;
+        DirectX::XMFLOAT3 CameraPosition;
+
+        float LightBrightness;
+        DirectX::XMFLOAT3 LightDirection;
+
+        float ScatteringAsymmetry;
+        DirectX::XMFLOAT3 LightColor;
     };
 
 
@@ -111,4 +119,11 @@ private:
 
     DirectX::XMFLOAT3 m_guiAlbedo = { 0.8, 0.08, 0.08 };
     float m_guiDensity = 1.f;
+
+    DirectX::XMFLOAT3 m_guiLightDirection = { 1, -0.5, 1 };
+    float m_guiLightBrightness = 2.f;
+
+    DirectX::XMFLOAT3 m_guiLightColor = { 0.8, 0.8, 0.5 };
+    float m_guiScatteringAsymmetry = 0.4f;
+
 };

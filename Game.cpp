@@ -153,6 +153,11 @@ void Game::Render()
     constants.NearPlane = 0.1f;
     constants.Albedo = m_guiAlbedo;
     constants.Density = m_guiDensity;
+    constants.CameraPosition = m_camera.GetCamera().GetPosition();
+    constants.LightBrightness = m_guiLightBrightness;
+    constants.LightDirection = m_guiLightDirection;
+    constants.ScatteringAsymmetry = m_guiScatteringAsymmetry;
+    constants.LightColor = m_guiLightColor;
 
     m_tetRS.SetCBV(cl, 0, 0, constants);
     cl->DispatchMesh(1, 1, 1);
@@ -174,10 +179,25 @@ void Game::Render()
 
     ImGui::End();
 
-    ImGui::Begin("Material");
+    ImGui::Begin("Options");
 
-    ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
-    ImGui::SliderFloat("Density", &m_guiDensity, 0, 10);
+    if (ImGui::TreeNodeEx("Material", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
+        ImGui::SliderFloat("Density", &m_guiDensity, 0, 10);
+        ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNodeEx("Light", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::DragFloat3("Direction", &m_guiLightDirection.x, 0.001f, -1.f, 1.f);
+        ImGui::SliderFloat("Brightness", &m_guiLightBrightness, 0, 10);
+        ImGui::ColorEdit3("Color", &m_guiLightColor.x);
+
+        ImGui::TreePop();
+    }
 
     ImGui::End();
 

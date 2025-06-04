@@ -9,6 +9,34 @@ struct BlendOutput
 
 static const float PI = 3.14159265359;
 
+float3 ViewTransmittance(float3 absorption, float opticalDepth)
+{
+    return exp(-absorption * opticalDepth);
+}
+
+// The Henyey-Greenstein phase function
+// TODO: Should this be wavelength dependent?
+float HGPhase(float3 L, float3 V, float asymmetry)
+{
+    float constant = 1.f / (4 * PI);
+    float g = asymmetry;
+    float numerator = 1 - g * g;
+    float cosTheta = clamp(dot(L, V), -1.f, 1.f);
+    float denominator = pow(1 + g * g + 2 * g * cosTheta, 1.5);
+    return constant * numerator / denominator;
+}
+
+float3 ScatteredLight(float3 absorption, 
+    float opticalDepth, 
+    float3 irradiance,
+    float3 L,
+    float3 V,
+    float asymmetry)
+{
+    float phase = HGPhase(L, V, asymmetry);
+    return phase * irradiance * (1.xxx - exp(-absorption * opticalDepth)) / absorption;
+}
+
 BlendOutput Interval_PS(VertexType input)
 {
     float4 minpoint = float4(input.A.xy, input.A.z, 1.0);
@@ -23,13 +51,13 @@ BlendOutput Interval_PS(VertexType input)
     
     float3 density = g_Density * (1.xxx - g_Albedo);
     float opticalDepth = length(b - a);
-    
-    ret.Tv = float4(exp(-density * opticalDepth), 1);
-    
-    float phase = 1.f / (4 * PI);
-    float R = 5.f;
-    
-    float3 cscat = phase * R * (1.xxx - exp(-density * opticalDepth)) / density;
+
+    ret.Tv = float4(ViewTransmittance(density, opticalDepth), 1);
+
+    float3 V = normalize(g_CameraPosition - a.xyz);
+    float3 L = normalize(-g_LightDirection);
+    float3 R = g_LightBrightness * g_LightColor;
+    float3 cscat = ScatteredLight(density, opticalDepth, R, L, V, g_ScatteringAsymmetry);
 
     ret.CScat = float4(cscat, 1);
     

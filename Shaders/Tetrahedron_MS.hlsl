@@ -2,6 +2,7 @@
 
 
 #include "TetrahedronPipeline.hlsli"
+#include "Quaternion.hlsli"
 
 #define X 1
 
@@ -320,13 +321,20 @@ void Tetrahedron_MS(
     
     tetIndices_t indices = tet[0];
 
-    float4x4 model = float4x4(
+    float4x4 scale = float4x4(
         2, 0, 0, 0,
         0, 2, 0, 0,
         0, 0, 2, 0,
         0, 0, 0, 1
     );
-    model._41_42_43 = Instances[instanceIndex].WorldPosition;
+    
+    float animationScale = 0.5 * (1 + sin(4 * g_totalTime + 69 * instanceIndex));
+    animationScale = lerp(0.8, 1, animationScale);
+    
+    float4x4 rotation = QuatTo4x4(QuatFromAxisAngle(float3(0, 0, 1), g_totalTime / 5.f));
+    float4x4 model = mul(scale, rotation);
+    
+    model._41_42_43 = animationScale * Instances[instanceIndex].WorldPosition;
     
     float4x4 modelView = mul(model, view);
     

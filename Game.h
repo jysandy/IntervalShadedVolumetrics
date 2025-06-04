@@ -46,6 +46,8 @@ public:
 
         float ScatteringAsymmetry;
         DirectX::XMFLOAT3 LightColor;
+
+        float TotalTime;
     };
 
 

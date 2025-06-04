@@ -74,8 +74,12 @@
     <None Include=".gitignore" />
     <None Include="README.md" />
     <None Include="LICENSE" />
+    <None Include="packages.config" />
+    <None Include="Shaders\TetrahedronPipeline.hlsli" />
+    <None Include="Shaders\Quaternion.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />
+    <FxCompile Include="Shaders\Interval_PS.hlsl" />
   </ItemGroup>
 </Project>

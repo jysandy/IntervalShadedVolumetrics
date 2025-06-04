@@ -175,6 +175,7 @@ void Game::Render()
     constants.LightDirection = lightDirection;
     constants.ScatteringAsymmetry = m_guiScatteringAsymmetry;
     constants.LightColor = m_guiLightColor;
+    constants.TotalTime = m_timer.GetTotalSeconds();
 
     m_tetRS.SetCBV(cl, 0, 0, constants);
     m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);

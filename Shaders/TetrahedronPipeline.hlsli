@@ -19,6 +19,8 @@ cbuffer Constants : register(b0, space0)
     
     float g_ScatteringAsymmetry;
     float3 g_LightColor;
+    
+    float g_totalTime;
 };
 
 struct InstanceData

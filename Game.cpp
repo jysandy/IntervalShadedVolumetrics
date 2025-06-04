@@ -130,13 +130,23 @@ void Game::Render()
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Render");
 
-    //m_effect->SetWorld(m_world);
-    //m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
-    //m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
+    m_effect->SetLightEnabled(0, true);
+    m_effect->SetLightDiffuseColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
+    m_effect->SetLightSpecularColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
+    m_effect->SetDiffuseColor({ 0.7, 0.7, 0.7 });
+    m_effect->SetSpecularPower(128);
+    m_effect->SetAmbientLightColor(0.001 * Vector3(m_guiLightColor));
+    auto lightDirection = Vector3(m_guiLightDirection);
+    lightDirection.Normalize();
+    m_effect->SetLightDirection(0, lightDirection);
+    m_effect->SetWorld(Matrix::CreateScale({50, 0.5, 50}) 
+        * Matrix::CreateTranslation({0, -10.f, 0}));
+    m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
+    m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
 
-    //m_effect->Apply(cl);
+    m_effect->Apply(cl);
 
-    //m_shape->Draw(cl);
+    m_shape->Draw(cl);
 
     m_tetRS.SetOnCommandList(cl);
     m_tetPSO->Set(cl, true);
@@ -155,7 +165,7 @@ void Game::Render()
     constants.Density = m_guiDensity;
     constants.CameraPosition = m_camera.GetCamera().GetPosition();
     constants.LightBrightness = m_guiLightBrightness;
-    constants.LightDirection = m_guiLightDirection;
+    constants.LightDirection = lightDirection;
     constants.ScatteringAsymmetry = m_guiScatteringAsymmetry;
     constants.LightColor = m_guiLightColor;
 
@@ -472,7 +482,6 @@ void Game::CreateWindowSizeDependentResources()
         rtState);
 
     m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd);
-    m_effect->EnableDefaultLighting();
 }
 
 void Game::CleanupResources()

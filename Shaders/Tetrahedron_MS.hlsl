@@ -334,7 +334,7 @@ void Tetrahedron_MS(
     float4x4 rotation = QuatTo4x4(QuatFromAxisAngle(float3(0, 0, 1), g_totalTime / 5.f));
     float4x4 model = mul(scale, rotation);
     
-    model._41_42_43 = animationScale * Instances[instanceIndex].WorldPosition;
+    model._41_42_43 = float3(animationScale.xx, 1) * Instances[instanceIndex].WorldPosition;
     
     float4x4 modelView = mul(model, view);
     

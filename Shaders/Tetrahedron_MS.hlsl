@@ -67,6 +67,7 @@ float cross2D(float2 v1, float2 v2)
     return v1.x * v2.y - v1.y * v2.x;
 }
 
+// Unused for now
 clipedTet_t clipTet(tet_t tet, float near)
 {
     bool clip[4];
@@ -345,10 +346,21 @@ void Tetrahedron_MS(
     tet.pos[3] = mul(coords[indices.index[3]], modelView);
 
     //clip test
-    // TODO: get rid of this, cull instead
     float bias = nearplane * 0.1;
-    clipedTet_t ctet = clipTet(tet, nearplane + bias);
     
+    clipedTet_t ctet;
+    ctet.tetCount = 1;
+    ctet.tets[0] = tet;
+
+    if (
+        tet.pos[0].z < nearplane + bias
+        || tet.pos[1].z < nearplane + bias
+        || tet.pos[2].z < nearplane + bias
+        || tet.pos[3].z < nearplane + bias
+        )
+    {
+        ctet.tetCount = 0;        
+    }
     
     proxy_t proxies[3];
     for (int i = 0; i < ctet.tetCount; i++)

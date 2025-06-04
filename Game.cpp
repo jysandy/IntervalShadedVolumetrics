@@ -13,6 +13,7 @@
 
 #include "Gradient/GraphicsMemoryManager.h"
 #include "Gradient/ReadData.h"
+#include "Gradient/Math.h"
 
 extern void ExitGame() noexcept;
 
@@ -183,7 +184,7 @@ void Game::Render()
     auto bm = Gradient::BufferManager::Get();
     auto instanceCount = bm->GetInstanceBuffer(m_tetInstances)->InstanceCount;
 
-    cl->DispatchMesh(instanceCount, 1, 1);
+    cl->DispatchMesh(Gradient::Math::DivRoundUp(instanceCount, 1), 1, 1);
 
     PIXEndEvent(cl);
 

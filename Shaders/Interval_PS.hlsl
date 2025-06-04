@@ -26,6 +26,8 @@ float HGPhase(float3 L, float3 V, float asymmetry)
     return constant * numerator / denominator;
 }
 
+static const float EPSILON = 0.0001;
+
 float3 ScatteredLight(float3 absorption, 
     float opticalDepth, 
     float3 irradiance,
@@ -34,7 +36,19 @@ float3 ScatteredLight(float3 absorption,
     float asymmetry)
 {
     float phase = HGPhase(L, V, asymmetry);
-    return phase * irradiance * (1.xxx - exp(-absorption * opticalDepth)) / absorption;
+    
+    float3 transmissionFactor = (1.xxx - exp(-absorption * opticalDepth)) / absorption;
+
+    if (absorption.x < EPSILON)
+        transmissionFactor.x = opticalDepth;
+
+    if (absorption.y < EPSILON)
+        transmissionFactor.y = opticalDepth;
+
+    if (absorption.z < EPSILON)
+        transmissionFactor.z = opticalDepth;
+    
+    return phase * irradiance * transmissionFactor;
 }
 
 BlendOutput Interval_PS(VertexType input)

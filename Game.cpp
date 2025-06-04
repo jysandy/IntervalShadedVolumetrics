@@ -162,7 +162,7 @@ void Game::Render()
     constants.InverseViewProj = (view * proj).Invert().Transpose();
     constants.NearPlane = 0.1f;
     constants.Albedo = m_guiAlbedo;
-    constants.Density = m_guiDensity;
+    constants.Absorption = m_guiAbsorption;
     constants.CameraPosition = m_camera.GetCamera().GetPosition();
     constants.LightBrightness = m_guiLightBrightness;
     constants.LightDirection = lightDirection;
@@ -194,7 +194,7 @@ void Game::Render()
     if (ImGui::TreeNodeEx("Material", ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
-        ImGui::SliderFloat("Density", &m_guiDensity, 0, 10);
+        ImGui::SliderFloat("Absorption", &m_guiAbsorption, 0, 10);
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
 
         ImGui::TreePop();

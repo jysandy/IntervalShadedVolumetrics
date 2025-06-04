@@ -63,15 +63,15 @@ BlendOutput Interval_PS(VertexType input)
 
     BlendOutput ret;
     
-    float3 density = g_Density * (1.xxx - g_Albedo);
+    float3 absorption = g_Absorption * (1.xxx - g_Albedo);
     float opticalDepth = length(b - a);
 
-    ret.Tv = float4(ViewTransmittance(density, opticalDepth), 1);
+    ret.Tv = float4(ViewTransmittance(absorption, opticalDepth), 1);
 
     float3 V = normalize(g_CameraPosition - a.xyz);
     float3 L = normalize(-g_LightDirection);
     float3 R = g_LightBrightness * g_LightColor;
-    float3 cscat = ScatteredLight(density, opticalDepth, R, L, V, g_ScatteringAsymmetry);
+    float3 cscat = ScatteredLight(absorption, opticalDepth, R, L, V, g_ScatteringAsymmetry);
 
     ret.CScat = float4(cscat, 1);
     

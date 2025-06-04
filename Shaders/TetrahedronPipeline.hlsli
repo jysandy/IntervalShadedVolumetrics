@@ -11,7 +11,7 @@ cbuffer Constants : register(b0, space0)
     float nearplane;
     float3 g_Albedo;
     
-    float g_Density;
+    float g_Absorption;
     float3 g_CameraPosition;
     
     float g_LightBrightness;

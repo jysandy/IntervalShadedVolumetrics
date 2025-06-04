@@ -146,7 +146,12 @@ void Game::Render()
 
     m_effect->Apply(cl);
 
-    m_shape->Draw(cl);
+    m_floor->Draw(cl);
+    
+    m_effect->SetWorld(Matrix::CreateScale({ 1, 1, 1 })
+        * Matrix::CreateTranslation({ 0, -5.f, 0 }));
+    m_effect->Apply(cl);
+    m_sphere->Draw(cl);
 
     m_tetRS.SetOnCommandList(cl);
     m_tetPSO->Set(cl, true);
@@ -373,7 +378,8 @@ void Game::CreateDeviceDependentResources()
 
     Gradient::GraphicsMemoryManager::Initialize(device);
 
-    m_shape = GeometricPrimitive::CreateBox({1, 1, 1});
+    m_floor = GeometricPrimitive::CreateBox({1, 1, 1});
+    m_sphere = GeometricPrimitive::CreateSphere();
 
     m_world = Matrix::Identity;
 
@@ -481,12 +487,12 @@ void Game::CreateWindowSizeDependentResources()
         CommonStates::CullNone,
         rtState);
 
-    m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd);
+    m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd); 
 }
 
 void Game::CleanupResources()
 {
-    m_shape.reset();
+    m_floor.reset();
     m_effect.reset();
     m_renderTarget.reset();
     Gradient::GraphicsMemoryManager::Shutdown();

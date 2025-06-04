@@ -107,7 +107,8 @@ private:
 
     DirectX::SimpleMath::Matrix m_world;
 
-    std::unique_ptr<DirectX::GeometricPrimitive> m_shape;
+    std::unique_ptr<DirectX::GeometricPrimitive> m_floor;
+    std::unique_ptr<DirectX::GeometricPrimitive> m_sphere;
     std::unique_ptr<DirectX::BasicEffect> m_effect;
     std::unique_ptr<Gradient::Rendering::RenderTexture> m_renderTarget;
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapper;

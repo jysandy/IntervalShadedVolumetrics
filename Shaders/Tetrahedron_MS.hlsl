@@ -316,9 +316,18 @@ void Tetrahedron_MS(
     out vertices VertexType verts[80]
 )
 {
-    uint tetIndex;
-    tetIndices_t indices = tet[gid.x];
+    uint instanceIndex = gid.x + gtid;
+    
+    tetIndices_t indices = tet[0];
 
+    float4x4 model = float4x4(
+        2, 0, 0, 0,
+        0, 2, 0, 0,
+        0, 0, 2, 0,
+        0, 0, 0, 1
+    );
+    model._41_42_43 = Instances[instanceIndex].WorldPosition;
+    
     float4x4 modelView = mul(model, view);
     
     tet_t tet;

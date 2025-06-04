@@ -3,7 +3,7 @@
 
 cbuffer Constants : register(b0, space0)
 {
-    float4x4 model;
+    float4x4 world;
     float4x4 view;
     float4x4 persp;
     float4x4 g_InverseViewProj;
@@ -20,6 +20,14 @@ cbuffer Constants : register(b0, space0)
     float g_ScatteringAsymmetry;
     float3 g_LightColor;
 };
+
+struct InstanceData
+{
+    float3 WorldPosition;
+    float Pad;
+};
+
+StructuredBuffer<InstanceData> Instances : register(t0, space0);
 
 struct VertexType
 {

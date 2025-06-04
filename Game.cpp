@@ -63,6 +63,8 @@ void Game::Initialize(HWND window, int width, int height)
     m_deviceResources->CreateWindowSizeDependentResources();
     CreateWindowSizeDependentResources();
 
+    m_camera.SetPosition({ 0, 0, 20 });
+
     // TODO: Change the timer settings if you want something other than the default variable timestep mode.
     // e.g. for 60 FPS fixed timestep update logic, call:
     /*
@@ -175,7 +177,12 @@ void Game::Render()
     constants.LightColor = m_guiLightColor;
 
     m_tetRS.SetCBV(cl, 0, 0, constants);
-    cl->DispatchMesh(1, 1, 1);
+    m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
+    
+    auto bm = Gradient::BufferManager::Get();
+    auto instanceCount = bm->GetInstanceBuffer(m_tetInstances)->InstanceCount;
+
+    cl->DispatchMesh(instanceCount, 1, 1);
 
     PIXEndEvent(cl);
 
@@ -350,6 +357,11 @@ void Game::GetDefaultSize(int& width, int& height) const noexcept
 }
 #pragma endregion
 
+float RandomFloat()
+{
+    return (rand() % 10000) / 10000.f;
+}
+
 #pragma region Direct3D Resources
 // These are the resources that depend on the device.
 void Game::CreateDeviceDependentResources()
@@ -377,6 +389,7 @@ void Game::CreateDeviceDependentResources()
     }
 
     Gradient::GraphicsMemoryManager::Initialize(device);
+    Gradient::BufferManager::Initialize();
 
     m_floor = GeometricPrimitive::CreateBox({1, 1, 1});
     m_sphere = GeometricPrimitive::CreateSphere();
@@ -431,6 +444,7 @@ void Game::CreateDeviceDependentResources()
 
     // PSO and root signature
     m_tetRS.AddCBV(0, 0);
+    m_tetRS.AddRootSRV(0, 0); // instances
     m_tetRS.Build(device);
 
     D3DX12_MESH_SHADER_PIPELINE_STATE_DESC psoDesc = Gradient::PipelineState::GetDefaultMeshDesc();
@@ -455,6 +469,8 @@ void Game::CreateDeviceDependentResources()
 
     m_tetPSO = std::make_unique<Gradient::PipelineState>(psoDesc);
     m_tetPSO->Build(device);
+
+    CreateTetrahedronInstances();
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
@@ -488,6 +504,36 @@ void Game::CreateWindowSizeDependentResources()
         rtState);
 
     m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd); 
+}
+
+void Game::CreateTetrahedronInstances()
+{
+    auto device = m_deviceResources->GetD3DDevice();
+    auto cq = m_deviceResources->GetCommandQueue();
+
+    // Create instances
+
+    std::vector<Gradient::BufferManager::InstanceData> instances;
+    for (int i = 0; i < 5000; i++)
+    {
+        Vector3 position;
+        position.x = RandomFloat() * 10.f - 5.f;
+        position.y = RandomFloat() * 10.f - 5.f;
+        position.z = RandomFloat() * 10.f - 5.f;
+
+        instances.push_back({ position });
+    }
+
+    std::sort(instances.begin(), instances.end(),
+        [](Gradient::BufferManager::InstanceData a, Gradient::BufferManager::InstanceData b)
+        {
+            // Sort by lowest Z first.
+            // Works as long as we're looking down -ve Z.
+            return a.Position.z < b.Position.z;
+        });
+
+    auto bm = Gradient::BufferManager::Get();
+    m_tetInstances = bm->CreateInstanceBuffer(device, cq, instances);
 }
 
 void Game::CleanupResources()

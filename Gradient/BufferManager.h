@@ -19,9 +19,7 @@ namespace Gradient
             // Not supporting scale to save space
             DirectX::XMFLOAT3 Position;
             float pad;
-            DirectX::XMFLOAT4 RotationQuat;
-            DirectX::XMFLOAT2 TexcoordURange;
-            DirectX::XMFLOAT2 TexcoordVRange;
+            //DirectX::XMFLOAT4 RotationQuat;
         };
 
         struct InstanceBufferEntry
@@ -40,6 +38,7 @@ namespace Gradient
         static void Shutdown();
         static BufferManager* Get();
 
+        // TODO: Templatize InstanceData
         InstanceBufferHandle CreateInstanceBuffer(ID3D12Device* device,
             ID3D12CommandQueue* cq,
             const std::vector<InstanceData>& instanceData);

@@ -21,6 +21,7 @@
 #include "Gradient/Rendering/RenderTexture.h"
 #include "Gradient/PipelineState.h"
 #include "Gradient/RootSignature.h"
+#include "Gradient/BufferManager.h"
 
 
 // A basic game implementation that creates a D3D12 device and
@@ -92,6 +93,7 @@ private:
 
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
+    void CreateTetrahedronInstances();
 
     // Device resources.
     std::unique_ptr<DX::DeviceResources>        m_deviceResources;
@@ -113,6 +115,7 @@ private:
     std::unique_ptr<Gradient::Rendering::RenderTexture> m_renderTarget;
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapper;
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapperHDR10;
+    Gradient::BufferManager::InstanceBufferHandle m_tetInstances;
 
     Gradient::RootSignature m_tetRS;
     std::unique_ptr<Gradient::PipelineState> m_tetPSO;

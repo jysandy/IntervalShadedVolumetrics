@@ -337,8 +337,8 @@ void Tetrahedron_MS(
     
     float timeJitter = frac(g_totalTime) * 26.8;
     
-    float4x4 rotation = QuatTo4x4(QuatFromAxisAngle(float3(0, 0, 1), 
-        0 * (g_totalTime * 256.f + timeJitter) 
+    float4x4 rotation = QuatTo4x4(QuatFromAxisAngle(float3(0, 0, 1),
+        0 * (g_totalTime * 256.f + timeJitter)
         + 69 * instanceIndex));
     float4x4 model = mul(scale, rotation);
     
@@ -355,10 +355,8 @@ void Tetrahedron_MS(
     //clip test
     float bias = nearplane * 0.1;
     
-    clipedTet_t ctet;
-    ctet.tetCount = 1;
-    ctet.tets[0] = tet;
-
+    bool visible = true;
+    
     if (
         tet.pos[0].z < nearplane + bias
         || tet.pos[1].z < nearplane + bias
@@ -366,18 +364,17 @@ void Tetrahedron_MS(
         || tet.pos[3].z < nearplane + bias
         )
     {
-        ctet.tetCount = 0;        
+        visible = false;
     }
     
-    proxy_t proxies[3];
-    for (int i = 0; i < ctet.tetCount; i++)
+    proxy_t proxy;
+    if (visible)
     {
-        
         //project all point
         for (int j = 0; j < 4; j++)
         {
-            ctet.tets[i].pos[j] = mul(ctet.tets[i].pos[j], persp);
-            ctet.tets[i].pos[j] = ctet.tets[i].pos[j] / ctet.tets[i].pos[j].w;
+            tet.pos[j] = mul(tet.pos[j], persp);
+            tet.pos[j] = tet.pos[j] / tet.pos[j].w;
         }
         
         int nb_triangle = 0;
@@ -386,13 +383,13 @@ void Tetrahedron_MS(
         // First test projection : 
         for (int j = 0; j < potentialProjection; j++)
         {
-            float4 p = ctet.tets[i].pos[potential_projection[j][0]];
+            float4 p = tet.pos[potential_projection[j][0]];
             
             
             uint faceID = potential_projection[j][1];
-            float4 a = ctet.tets[i].pos[faces[faceID][0]];
-            float4 b = ctet.tets[i].pos[faces[faceID][1]];
-            float4 c = ctet.tets[i].pos[faces[faceID][2]];
+            float4 a = tet.pos[faces[faceID][0]];
+            float4 b = tet.pos[faces[faceID][1]];
+            float4 c = tet.pos[faces[faceID][2]];
 
             float2 v0 = b.xy - a.xy;
             float2 v1 = c.xy - b.xy;
@@ -416,98 +413,89 @@ void Tetrahedron_MS(
 
                 nb_triangle = 3;
 
-                proxies[i].pos[0] = a.xyzz;
-                proxies[i].pos[1] = b.xyzz;
-                proxies[i].pos[2] = c.xyzz;
+                proxy.pos[0] = a.xyzz;
+                proxy.pos[1] = b.xyzz;
+                proxy.pos[2] = c.xyzz;
                 
-                proxies[i].pos[3] = p.z < z_ ? float4(p.xyz, z_) : float4(p.xy, z_, p.z);
-                proxies[i].point_count = 4;
+                proxy.pos[3] = p.z < z_ ? float4(p.xyz, z_) : float4(p.xy, z_, p.z);
+                proxy.point_count = 4;
             }
         }
 
-        if (nb_triangle != 0)
+        if (nb_triangle == 0)
         {
-            continue;
-        }
-        
-
-        for (int j = 0; j < potentialCrossing; j++)
-        {
-            float4 l0a = ctet.tets[i].pos[edges[potential_intersection[j][0]][0]];
-            float4 l0b = ctet.tets[i].pos[edges[potential_intersection[j][0]][1]];
-            float4 l1a = ctet.tets[i].pos[edges[potential_intersection[j][1]][0]];
-            float4 l1b = ctet.tets[i].pos[edges[potential_intersection[j][1]][1]];
-
-            float2 p;
-            float2 t;
-            if (lineIntersection(l0a.xy, l0b.xy, l1a.xy, l1b.xy, p, t))
+            for (int j = 0; j < potentialCrossing; j++)
             {
+                float4 l0a = tet.pos[edges[potential_intersection[j][0]][0]];
+                float4 l0b = tet.pos[edges[potential_intersection[j][0]][1]];
+                float4 l1a = tet.pos[edges[potential_intersection[j][1]][0]];
+                float4 l1b = tet.pos[edges[potential_intersection[j][1]][1]];
+
+                float2 p;
+                float2 t;
+                if (lineIntersection(l0a.xy, l0b.xy, l1a.xy, l1b.xy, p, t))
+                {
 
                 
-                float z0 = (l0a.z) * (1.0 - t[0]) + (l0b.z) * t[0];
-                float z1 = (l1a.z) * (1.0 - t[1]) + (l1b.z) * t[1];
+                    float z0 = (l0a.z) * (1.0 - t[0]) + (l0b.z) * t[0];
+                    float z1 = (l1a.z) * (1.0 - t[1]) + (l1b.z) * t[1];
 
 
-                proxies[i].pos[0] = l0a.xyzz;
-                proxies[i].pos[1] = l1a.xyzz;
-                proxies[i].pos[2] = l0b.xyzz;
-                proxies[i].pos[3] = l1b.xyzz;
-                proxies[i].pos[4] = z0 < z1 ? float4(p.xy, z0, z1) : float4(p.xy, z1, z0);
-                proxies[i].point_count = 5;
-                nb_triangle = 4;
+                    proxy.pos[0] = l0a.xyzz;
+                    proxy.pos[1] = l1a.xyzz;
+                    proxy.pos[2] = l0b.xyzz;
+                    proxy.pos[3] = l1b.xyzz;
+                    proxy.pos[4] = z0 < z1 ? float4(p.xy, z0, z1) : float4(p.xy, z1, z0);
+                    proxy.point_count = 5;
+                    nb_triangle = 4;
+                }
             }
         }
     }
 
-    // Compute these in order to 
-    // call SetMeshOutputCounts
+    
+
     int vertex_counter = 0;
     int triangle_counter = 0;
-    for (int i = 0; i < ctet.tetCount; i++)
+    if (visible)
     {
-        if (proxies[i].point_count == 4)
+        // Compute these in order to 
+        // call SetMeshOutputCounts
+        if (proxy.point_count == 4)
         {
-            triangle_counter++;
-            triangle_counter++;
-            triangle_counter++;
+            triangle_counter += 3;
         }
-        else if (proxies[i].point_count == 5)
+        else if (proxy.point_count == 5)
         {
-            triangle_counter++;
-            triangle_counter++;
-            triangle_counter++;
-            triangle_counter++;
+            triangle_counter += 4;
         }
-        vertex_counter += proxies[i].point_count;
-    }
+        vertex_counter += proxy.point_count;
 
-    SetMeshOutputCounts(vertex_counter, triangle_counter);
+        SetMeshOutputCounts(vertex_counter, triangle_counter);
     
-    // Now we can write to verts and tris
-    vertex_counter = 0;
-    triangle_counter = 0;
-    for (int i = 0; i < ctet.tetCount; i++)
-    {
+        // Now we can write to verts and tris
+        vertex_counter = 0;
+        triangle_counter = 0;
 
-        for (int j = 0; j < proxies[i].point_count; j++)
+        for (int j = 0; j < proxy.point_count; j++)
         {
-            verts[vertex_counter + j].Position = float4(proxies[i].pos[j].xy, 0, 1);
-            verts[vertex_counter + j].A = float4(proxies[i].pos[j].xy, proxies[i].pos[j].z, proxies[i].pos[j].w);
+            verts[vertex_counter + j].Position = float4(proxy.pos[j].xy, 0, 1);
+            verts[vertex_counter + j].A = float4(proxy.pos[j].xy, proxy.pos[j].z, proxy.pos[j].w);
         }
 
-        if (proxies[i].point_count == 4)
+        if (proxy.point_count == 4)
         {
             tris[triangle_counter++] = uint3(0, 1, 3) + vertex_counter;
             tris[triangle_counter++] = uint3(1, 2, 3) + vertex_counter;
             tris[triangle_counter++] = uint3(2, 0, 3) + vertex_counter;
         }
-        else if (proxies[i].point_count == 5)
+        else if (proxy.point_count == 5)
         {
             tris[triangle_counter++] = uint3(0, 1, 4) + vertex_counter;
             tris[triangle_counter++] = uint3(1, 2, 4) + vertex_counter;
             tris[triangle_counter++] = uint3(2, 3, 4) + vertex_counter;
             tris[triangle_counter++] = uint3(3, 0, 4) + vertex_counter;
         }
-        vertex_counter += proxies[i].point_count;
+        vertex_counter += proxy.point_count;
     }
 }

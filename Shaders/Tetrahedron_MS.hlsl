@@ -335,7 +335,7 @@ void Tetrahedron_MS(
     float timeJitter = frac(g_totalTime) * 26.8;
     
     float4x4 rotation = QuatTo4x4(QuatFromAxisAngle(float3(0, 0, 1), 
-        1 * (g_totalTime * 256.f + timeJitter) 
+        0 * (g_totalTime * 256.f + timeJitter) 
         + 69 * instanceIndex));
     float4x4 model = mul(scale, rotation);
     

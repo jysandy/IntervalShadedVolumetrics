@@ -309,13 +309,16 @@ static const uint3 faces[] =
 };
 
 
+#define MAX_VERTS_PER_TET 5
+#define MAX_TRIS_PER_TET 4
+
 [numthreads(X, 1, 1)]
 [outputtopology("triangle")]
 void Tetrahedron_MS(
     in uint gtid : SV_GroupIndex,
     in uint3 gid : SV_GroupID,
-    out indices uint3 tris[80],
-    out vertices VertexType verts[80]
+    out indices uint3 tris[MAX_TRIS_PER_TET],
+    out vertices VertexType verts[MAX_VERTS_PER_TET]
 )
 {
     uint instanceIndex = gid.x + gtid;

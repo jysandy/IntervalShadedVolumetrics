@@ -124,12 +124,12 @@ private:
 
 
     DirectX::XMFLOAT3 m_guiAlbedo = { 0.8, 0.08, 0.08 };
-    float m_guiAbsorption = 1.f;
+    float m_guiAbsorption = 1.2f;
 
     DirectX::XMFLOAT3 m_guiLightDirection = { 0, -0.2, 1 };
     float m_guiLightBrightness = 2.f;
 
     DirectX::XMFLOAT3 m_guiLightColor = { 1, 0.8, 0.4 };
-    float m_guiScatteringAsymmetry = 0.4f;
+    float m_guiScatteringAsymmetry = 0.75f;
 
 };

@@ -178,13 +178,15 @@ void Game::Render()
     constants.LightColor = m_guiLightColor;
     constants.TotalTime = m_timer.GetTotalSeconds();
 
-    m_tetRS.SetCBV(cl, 0, 0, constants);
-    m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
-    
     auto bm = Gradient::BufferManager::Get();
     auto instanceCount = bm->GetInstanceBuffer(m_tetInstances)->InstanceCount;
 
-    cl->DispatchMesh(Gradient::Math::DivRoundUp(instanceCount, 1), 1, 1);
+    constants.NumInstances = instanceCount;
+
+    m_tetRS.SetCBV(cl, 0, 0, constants);
+    m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
+
+    cl->DispatchMesh(Gradient::Math::DivRoundUp(instanceCount, 32), 1, 1);
 
     PIXEndEvent(cl);
 

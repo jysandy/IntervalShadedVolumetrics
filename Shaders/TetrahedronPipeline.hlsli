@@ -21,6 +21,7 @@ cbuffer Constants : register(b0, space0)
     float3 g_LightColor;
     
     float g_totalTime;
+    float g_NumInstances;
 };
 
 struct InstanceData

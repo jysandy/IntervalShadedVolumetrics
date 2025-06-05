@@ -48,6 +48,7 @@ public:
         DirectX::XMFLOAT3 LightColor;
 
         float TotalTime;
+        float NumInstances;
     };
 
 

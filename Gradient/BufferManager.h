@@ -2,6 +2,9 @@
 
 #include "pch.h"
 
+#include <directxtk12/BufferHelpers.h>
+#include <directxtk12/ResourceUploadBatch.h>
+
 #include "Gradient/BarrierResource.h"
 #include "Gradient/FreeListAllocator.h"
 #include "Gradient/Rendering/ProceduralMesh.h"
@@ -13,15 +16,6 @@ namespace Gradient
     class BufferManager
     {
     public:
-
-        struct __declspec(align(16)) InstanceData
-        {
-            // Not supporting scale to save space
-            DirectX::XMFLOAT3 Position;
-            float pad;
-            //DirectX::XMFLOAT4 RotationQuat;
-        };
-
         struct InstanceBufferEntry
         {
             BarrierResource Resource;
@@ -38,10 +32,10 @@ namespace Gradient
         static void Shutdown();
         static BufferManager* Get();
 
-        // TODO: Templatize InstanceData
+        template <typename T>
         InstanceBufferHandle CreateInstanceBuffer(ID3D12Device* device,
             ID3D12CommandQueue* cq,
-            const std::vector<InstanceData>& instanceData);
+            const std::vector<T>& instanceData);
         InstanceBufferEntry* GetInstanceBuffer(InstanceBufferHandle handle);
 
         MeshHandle AddMesh(Rendering::ProceduralMesh&& mesh);
@@ -124,4 +118,37 @@ namespace Gradient
         InstanceBufferList m_instanceBuffers;
         MeshList m_meshes;
     };
+
+    template <typename T>
+    BufferManager::InstanceBufferHandle BufferManager::CreateInstanceBuffer(
+        ID3D12Device* device,
+        ID3D12CommandQueue* cq,
+        const std::vector<T>& instanceData)
+    {
+        auto handle = m_instanceBuffers.Allocate({
+            BarrierResource(),
+            static_cast<uint32_t>(instanceData.size())
+            });
+
+        auto entry = m_instanceBuffers.Get(handle);
+
+        DirectX::ResourceUploadBatch uploadBatch(device);
+
+        uploadBatch.Begin();
+
+        // TODO: set flag to allow access as a UAV?
+        DX::ThrowIfFailed(
+            DirectX::CreateStaticBuffer(device,
+                uploadBatch,
+                instanceData.data(),
+                instanceData.size(),
+                D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
+                entry->Resource.ReleaseAndGetAddressOf()));
+        entry->Resource.SetState(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+
+        auto uploadFinished = uploadBatch.End(cq);
+        uploadFinished.wait();
+
+        return handle;
+    }
 }

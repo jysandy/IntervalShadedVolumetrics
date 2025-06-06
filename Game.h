@@ -51,6 +51,14 @@ public:
         float NumInstances;
     };
 
+    struct __declspec(align(16)) InstanceData
+    {
+        // Not supporting scale to save space
+        DirectX::XMFLOAT3 Position;
+        float pad;
+        //DirectX::XMFLOAT4 RotationQuat;
+    };
+
 
     Game() noexcept(false);
     ~Game();

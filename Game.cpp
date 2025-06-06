@@ -517,7 +517,7 @@ void Game::CreateTetrahedronInstances()
 
     // Create instances
 
-    std::vector<Gradient::BufferManager::InstanceData> instances;
+    std::vector<InstanceData> instances;
     for (int i = 0; i < 5000; i++)
     {
         Vector3 position;
@@ -529,7 +529,7 @@ void Game::CreateTetrahedronInstances()
     }
 
     std::sort(instances.begin(), instances.end(),
-        [](Gradient::BufferManager::InstanceData a, Gradient::BufferManager::InstanceData b)
+        [](InstanceData a, InstanceData b)
         {
             // Sort by lowest Z first.
             // Works as long as we're looking down -ve Z.

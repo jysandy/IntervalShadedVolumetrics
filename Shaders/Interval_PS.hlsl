@@ -63,7 +63,7 @@ BlendOutput Interval_PS(VertexType input)
 
     BlendOutput ret;
     
-    float3 absorption = g_Absorption * (1.xxx - g_Albedo) * 0.01f;
+    float3 absorption = input.DensityScale * g_Absorption * (1.xxx - g_Albedo) * 0.01f;
     float opticalDepth = length(b - a);
 
     ret.Tv = float4(ViewTransmittance(absorption, opticalDepth), 1);

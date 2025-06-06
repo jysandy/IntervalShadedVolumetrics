@@ -27,7 +27,7 @@ cbuffer Constants : register(b0, space0)
 struct InstanceData
 {
     float3 WorldPosition;
-    float Pad;
+    float DensityScale;
 };
 
 StructuredBuffer<InstanceData> Instances : register(t0, space0);
@@ -40,6 +40,8 @@ struct VertexType
     // to form the depth values. 
     // TODO: Rename this to something reasonable
     float4 A : POSITION1;
+    
+    float DensityScale : DENSITY;
 };
 
 #endif

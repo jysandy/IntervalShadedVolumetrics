@@ -508,6 +508,8 @@ void Tetrahedron_MS(
         {
             verts[prefixVertices + j].Position = float4(proxy.pos[j].xy, 0, 1);
             verts[prefixVertices + j].A = float4(proxy.pos[j].xy, proxy.pos[j].z, proxy.pos[j].w);
+            verts[prefixVertices + j].DensityScale = GetInstanceData(instanceIndex).DensityScale;
+
         }
 
         if (proxy.point_count == 4)

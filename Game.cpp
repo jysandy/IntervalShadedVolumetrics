@@ -158,31 +158,8 @@ void Game::Render()
 
     cl->RSSetScissorRects(1, &scissorRect);
 
-
-    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Render");
-
-    m_effect->SetLightEnabled(0, true);
-    m_effect->SetLightDiffuseColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
-    m_effect->SetLightSpecularColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
-    m_effect->SetDiffuseColor({ 0.7, 0.7, 0.7 });
-    m_effect->SetSpecularPower(128);
-    m_effect->SetAmbientLightColor(0.001 * Vector3(m_guiLightColor));
     auto lightDirection = Vector3(m_guiLightDirection);
     lightDirection.Normalize();
-    m_effect->SetLightDirection(0, lightDirection);
-    m_effect->SetWorld(Matrix::CreateScale({50, 0.5, 50}) 
-        * Matrix::CreateTranslation({0, -10.f, 0}));
-    m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
-    m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
-
-    m_effect->Apply(cl);
-
-    m_floor->Draw(cl);
-    
-    m_effect->SetWorld(Matrix::CreateScale({ 1, 1, 1 })
-        * Matrix::CreateTranslation({ 0, -5.f, 0 }));
-    m_effect->Apply(cl);
-    m_sphere->Draw(cl);
 
     Constants constants;
     constants.World = m_world.Transpose();
@@ -205,6 +182,7 @@ void Game::Render()
     auto instances = bm->GetInstanceBuffer(m_tetInstances);
     auto instanceCount = instances->InstanceCount;
     constants.NumInstances = instanceCount;
+
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Sort Tetrahedrons");
 
@@ -241,7 +219,7 @@ void Game::Render()
 
     auto payloadResourceDesc = ffxGetResourceDescriptionDX12(
         bm->GetInstanceBuffer(m_tetIndices)->Resource.Get(), FFX_RESOURCE_USAGE_UAV);
-    payloadResourceDesc.format  = FFX_SURFACE_FORMAT_R32_UINT;
+    payloadResourceDesc.format = FFX_SURFACE_FORMAT_R32_UINT;
     payloadResourceDesc.stride = sizeof(uint32_t);
     dispatchDesc.payloadBuffer = ffxGetResourceDX12(
         bm->GetInstanceBuffer(m_tetIndices)->Resource.Get(),
@@ -255,6 +233,29 @@ void Game::Render()
 
     cl->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
     PIXEndEvent(cl);
+
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Render");
+
+    m_effect->SetLightEnabled(0, true);
+    m_effect->SetLightDiffuseColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
+    m_effect->SetLightSpecularColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
+    m_effect->SetDiffuseColor({ 0.7, 0.7, 0.7 });
+    m_effect->SetSpecularPower(128);
+    m_effect->SetAmbientLightColor(0.001 * Vector3(m_guiLightColor));
+    m_effect->SetLightDirection(0, lightDirection);
+    m_effect->SetWorld(Matrix::CreateScale({50, 0.5, 50}) 
+        * Matrix::CreateTranslation({0, -10.f, 0}));
+    m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
+    m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
+
+    m_effect->Apply(cl);
+
+    m_floor->Draw(cl);
+    
+    m_effect->SetWorld(Matrix::CreateScale({ 1, 1, 1 })
+        * Matrix::CreateTranslation({ 0, -5.f, 0 }));
+    m_effect->Apply(cl);
+    m_sphere->Draw(cl);
 
     m_tetRS.SetOnCommandList(cl);
     m_tetPSO->Set(cl, true);
@@ -633,7 +634,9 @@ void Game::CreateTetrahedronInstances()
         position.y = RandomFloat() * 10.f - 5.f;
         position.z = RandomFloat() * 10.f - 5.f;
 
-        instances.push_back({ position });
+        float densityMultiplier = std::abs(RandomFloat() * 4.f - 1.f);
+
+        instances.push_back({ position, densityMultiplier });
     }
 
     std::sort(instances.begin(), instances.end(),

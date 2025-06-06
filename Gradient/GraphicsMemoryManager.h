@@ -75,6 +75,13 @@ namespace Gradient
             uint32_t mipLevel = 0
         );
 
+        DescriptorView CreateBufferUAV(
+            ID3D12Device* device,
+            ID3D12Resource* resource,
+            uint32_t stride,
+           D3D12_BUFFER_UAV_FLAGS = D3D12_BUFFER_UAV_FLAG_NONE
+        );
+
         D3D12_CPU_DESCRIPTOR_HANDLE GetSRVOrUAVCpuHandle(DescriptorIndex index);
         D3D12_GPU_DESCRIPTOR_HANDLE GetSRVOrUAVGpuHandle(DescriptorIndex index);
 

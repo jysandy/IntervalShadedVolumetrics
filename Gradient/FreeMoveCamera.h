@@ -23,7 +23,7 @@ namespace Gradient
         bool IsActive();
 
     private:
-        bool m_isActive;
+        bool m_isActive = true;
 
         Camera m_camera;
 

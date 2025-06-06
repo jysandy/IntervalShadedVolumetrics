@@ -33,7 +33,7 @@ namespace Gradient
         static BufferManager* Get();
 
         template <typename T>
-        InstanceBufferHandle CreateInstanceBuffer(ID3D12Device* device,
+        InstanceBufferHandle CreateBuffer(ID3D12Device* device,
             ID3D12CommandQueue* cq,
             const std::vector<T>& instanceData);
         InstanceBufferEntry* GetInstanceBuffer(InstanceBufferHandle handle);
@@ -120,7 +120,7 @@ namespace Gradient
     };
 
     template <typename T>
-    BufferManager::InstanceBufferHandle BufferManager::CreateInstanceBuffer(
+    BufferManager::InstanceBufferHandle BufferManager::CreateBuffer(
         ID3D12Device* device,
         ID3D12CommandQueue* cq,
         const std::vector<T>& instanceData)
@@ -136,14 +136,14 @@ namespace Gradient
 
         uploadBatch.Begin();
 
-        // TODO: set flag to allow access as a UAV?
         DX::ThrowIfFailed(
             DirectX::CreateStaticBuffer(device,
                 uploadBatch,
                 instanceData.data(),
                 instanceData.size(),
                 D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE,
-                entry->Resource.ReleaseAndGetAddressOf()));
+                entry->Resource.ReleaseAndGetAddressOf(),
+                D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS));
         entry->Resource.SetState(D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 
         auto uploadFinished = uploadBatch.End(cq);

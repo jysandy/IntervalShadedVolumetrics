@@ -16,6 +16,8 @@
 #include <directxtk12/GeometricPrimitive.h>
 #include <directxtk12/CommonStates.h>
 #include <directxtk12/PostProcess.h>
+#include <FidelityFX/host/backends/dx12/ffx_dx12.h>
+#include <FidelityFX/host/ffx_parallelsort.h>
 
 #include "Gradient/FreeMoveCamera.h"
 #include "Gradient/Rendering/RenderTexture.h"
@@ -127,9 +129,16 @@ private:
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapper;
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapperHDR10;
     Gradient::BufferManager::InstanceBufferHandle m_tetInstances;
+    Gradient::BufferManager::InstanceBufferHandle m_tetKeys;
+    Gradient::BufferManager::InstanceBufferHandle m_tetIndices;
+    Gradient::GraphicsMemoryManager::DescriptorView m_tetKeysUAV;
+    Gradient::GraphicsMemoryManager::DescriptorView m_tetIndicesUAV;
 
     Gradient::RootSignature m_tetRS;
     std::unique_ptr<Gradient::PipelineState> m_tetPSO;
+
+    Gradient::RootSignature m_keyWritingRS;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_keyWritingPSO;
 
 
     DirectX::XMFLOAT3 m_guiAlbedo = { 0.8, 0.08, 0.08 };
@@ -140,5 +149,11 @@ private:
 
     DirectX::XMFLOAT3 m_guiLightColor = { 1, 0.8, 0.4 };
     float m_guiScatteringAsymmetry = 0.75f;
+
+    // FFX stuff
+
+    std::vector<byte> m_ffxScratchMemory;
+    FfxInterface m_ffxInterface;
+    FfxParallelSortContext m_parallelSortContext;
 
 };

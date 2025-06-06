@@ -95,7 +95,20 @@ namespace Gradient
         auto index = AllocateSrvOrUav();
 
         DirectX::CreateUnorderedAccessView(device, resource, GetSRVOrUAVCpuHandle(index), mipLevel);
+        return std::make_shared<DescriptorIndexContainer>(index, DescriptorIndexType::SRVorUAV);
+    }
 
+    GraphicsMemoryManager::DescriptorView GraphicsMemoryManager::CreateBufferUAV(
+        ID3D12Device* device,
+        ID3D12Resource* resource,
+        uint32_t stride   ,
+        D3D12_BUFFER_UAV_FLAGS flags
+    )
+    {
+        auto index = AllocateSrvOrUav();
+
+        DirectX::CreateBufferUnorderedAccessView(device, resource, GetSRVOrUAVCpuHandle(index),
+            stride, flags);
         return std::make_shared<DescriptorIndexContainer>(index, DescriptorIndexType::SRVorUAV);
     }
 

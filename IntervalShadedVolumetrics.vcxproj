@@ -449,6 +449,12 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Tetrahedron_MS</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='GpuTrace|x64'">Tetrahedron_MS</EntryPointName>
     </FxCompile>
+    <FxCompile Include="Shaders\WriteSortingKeys_CS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">WriteSortingKeys_CS</EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">WriteSortingKeys_CS</EntryPointName>
+    </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <Import Condition="Exists('$(VCInstallDir)vcpkg\scripts\buildsystems\msbuild\vcpkg.targets')" Project="$(VCInstallDir)vcpkg\scripts\buildsystems\msbuild\vcpkg.targets" />

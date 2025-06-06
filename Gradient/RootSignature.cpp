@@ -237,7 +237,12 @@ namespace Gradient
         auto bufferEntry = bm->GetInstanceBuffer(handle);
 
         assert(bufferEntry);
-        cl->SetGraphicsRootShaderResourceView(rpIndex,
-            bufferEntry->Resource.GetGpuAddress());
+
+        if (m_isCompute)
+            cl->SetComputeRootShaderResourceView(rpIndex,
+                bufferEntry->Resource.GetGpuAddress());
+        else
+            cl->SetGraphicsRootShaderResourceView(rpIndex,
+                bufferEntry->Resource.GetGpuAddress());
     }
 }

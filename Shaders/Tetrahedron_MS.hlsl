@@ -4,6 +4,13 @@
 #include "TetrahedronPipeline.hlsli"
 #include "Quaternion.hlsli"
 
+StructuredBuffer<uint> Indices : register(t1, space0);
+
+InstanceData GetInstanceData(uint index)
+{
+    return Instances[Indices[index]];
+}
+
 /*
 	std::vector<vec4f> vertices;
 	vertices.push_back(vec4f({sqrtf(8.0f/9.0f), 0.0f, -1.0f/3.0f,1.0}));
@@ -337,17 +344,23 @@ void Tetrahedron_MS(
             0, 0, 0, 1
         );
         
-        float animationScale = 0.5 * (1 + sin(4 * g_totalTime + 69 * instanceIndex));
+        float3 worldPosition = GetInstanceData(instanceIndex).WorldPosition;
+        float noise = dot(worldPosition, worldPosition);
+        
+        float animationScale = 0.5 * (1 + sin(4 * g_totalTime + 69 * noise));
         animationScale = lerp(0.8, 1, animationScale);
         
         float timeJitter = frac(g_totalTime) * 26.8;
         
+        // TODO: Put the rotation into per-instance data
         float4x4 rotation = QuatTo4x4(QuatFromAxisAngle(float3(0, 0, 1),
             0 * (g_totalTime * 256.f + timeJitter)
-            + 69 * instanceIndex));
+            + 69 * noise));
         float4x4 model = mul(scale, rotation);
         
-        model._41_42_43 = float3(animationScale.xx, 1) * Instances[instanceIndex].WorldPosition;
+        // TODO: Move translation to a compute shader
+        model._41_42_43 = //float3(animationScale.xx, 1) * 
+            worldPosition;
         
         float4x4 modelView = mul(model, view);
         

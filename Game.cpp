@@ -15,14 +15,38 @@
 #include "Gradient/ReadData.h"
 #include "Gradient/Math.h"
 
-#include <FidelityFX/host/ffx_parallelsort.h>
-
 extern void ExitGame() noexcept;
 
 using namespace DirectX;
 using namespace DirectX::SimpleMath;
 
 using Microsoft::WRL::ComPtr;
+
+inline void ThrowIfFfxFailed(FfxErrorCode error)
+{
+    if (error != FFX_OK)
+    {
+        throw std::runtime_error("FFX failed with code: " + std::to_string(error));
+    }
+}
+
+Microsoft::WRL::ComPtr<ID3D12PipelineState> CreateComputePipelineState(
+    ID3D12Device* device,
+    const std::wstring& shaderPath,
+    ID3D12RootSignature* rootSignature
+)
+{
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> out;
+
+    auto csData = DX::ReadData(shaderPath.c_str());
+    D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
+    psoDesc.pRootSignature = rootSignature;
+    psoDesc.CS = { csData.data(), csData.size() };
+    DX::ThrowIfFailed(
+        device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(out.ReleaseAndGetAddressOf())));
+
+    return out;
+}
 
 Game::Game() noexcept(false)
 {
@@ -54,6 +78,7 @@ Game::~Game()
 void Game::Initialize(HWND window, int width, int height)
 {
     m_keyboard = std::make_unique<Keyboard>();
+    DirectX::Keyboard::Get().Reset();
     m_mouse = std::make_unique<Mouse>();
     m_mouse->SetWindow(window);
     m_mouse->SetMode(DirectX::Mouse::MODE_ABSOLUTE);
@@ -120,6 +145,7 @@ void Game::Render()
     ClearAndSetHDRTarget();
 
     auto cl = m_deviceResources->GetCommandList();
+    auto bm = Gradient::BufferManager::Get();
 
     ID3D12DescriptorHeap* heaps[] = { gmm->GetSrvUavDescriptorHeap(), m_states->Heap() };
     cl->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
@@ -158,9 +184,6 @@ void Game::Render()
     m_effect->Apply(cl);
     m_sphere->Draw(cl);
 
-    m_tetRS.SetOnCommandList(cl);
-    m_tetPSO->Set(cl, true);
-
     Constants constants;
     constants.World = m_world.Transpose();
 
@@ -179,14 +202,66 @@ void Game::Render()
     constants.ScatteringAsymmetry = m_guiScatteringAsymmetry;
     constants.LightColor = m_guiLightColor;
     constants.TotalTime = m_timer.GetTotalSeconds();
-
-    auto bm = Gradient::BufferManager::Get();
-    auto instanceCount = bm->GetInstanceBuffer(m_tetInstances)->InstanceCount;
-
+    auto instances = bm->GetInstanceBuffer(m_tetInstances);
+    auto instanceCount = instances->InstanceCount;
     constants.NumInstances = instanceCount;
+
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Sort Tetrahedrons");
+
+    bm->GetInstanceBuffer(m_tetInstances)->Resource.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    bm->GetInstanceBuffer(m_tetKeys)->Resource.Transition(cl, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(cl, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+    m_keyWritingRS.SetOnCommandList(cl);
+    cl->SetPipelineState(m_keyWritingPSO.Get());
+
+    m_keyWritingRS.SetCBV(cl, 0, 0, constants);
+    m_keyWritingRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
+    m_keyWritingRS.SetUAV(cl, 0, 0, m_tetKeysUAV);
+    m_keyWritingRS.SetUAV(cl, 1, 0, m_tetIndicesUAV);
+
+    cl->Dispatch(instanceCount, 1, 1);
+
+    auto keysBuffer = bm->GetInstanceBuffer(m_tetKeys);
+    auto& keysResource = keysBuffer->Resource;
+    keysResource.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+
+    FfxParallelSortDispatchDescription dispatchDesc = {};
+
+    auto resourceDesc = ffxGetResourceDescriptionDX12(keysResource.Get(), FFX_RESOURCE_USAGE_UAV);
+    resourceDesc.format = FfxSurfaceFormat::FFX_SURFACE_FORMAT_R32_FLOAT;
+    resourceDesc.stride = sizeof(float);
+    dispatchDesc.commandList = ffxGetCommandListDX12(cl);
+    dispatchDesc.keyBuffer = ffxGetResourceDX12(keysResource.Get(),
+        resourceDesc,
+        L"Tetrahedron_KeyBuffer",
+        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ
+    );
+
+    auto payloadResourceDesc = ffxGetResourceDescriptionDX12(
+        bm->GetInstanceBuffer(m_tetIndices)->Resource.Get(), FFX_RESOURCE_USAGE_UAV);
+    payloadResourceDesc.format  = FFX_SURFACE_FORMAT_R32_UINT;
+    payloadResourceDesc.stride = sizeof(uint32_t);
+    dispatchDesc.payloadBuffer = ffxGetResourceDX12(
+        bm->GetInstanceBuffer(m_tetIndices)->Resource.Get(),
+        payloadResourceDesc,
+        L"Tetrahedron_PayloadBuffer",
+        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ
+    );
+    dispatchDesc.numKeysToSort = instanceCount;
+
+    ThrowIfFfxFailed(ffxParallelSortContextDispatch(&m_parallelSortContext, &dispatchDesc));
+
+    cl->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
+    PIXEndEvent(cl);
+
+    m_tetRS.SetOnCommandList(cl);
+    m_tetPSO->Set(cl, true);
 
     m_tetRS.SetCBV(cl, 0, 0, constants);
     m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
+    m_tetRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
 
     cl->DispatchMesh(Gradient::Math::DivRoundUp(instanceCount, 32), 1, 1);
 
@@ -448,9 +523,10 @@ void Game::CreateDeviceDependentResources()
 
     ImGui_ImplDX12_Init(&initInfo);
 
-    // PSO and root signature
+    // Tetrahedron PSO and root signature
     m_tetRS.AddCBV(0, 0);
     m_tetRS.AddRootSRV(0, 0); // instances
+    m_tetRS.AddRootSRV(1, 0); // indices
     m_tetRS.Build(device);
 
     D3DX12_MESH_SHADER_PIPELINE_STATE_DESC psoDesc = Gradient::PipelineState::GetDefaultMeshDesc();
@@ -475,6 +551,35 @@ void Game::CreateDeviceDependentResources()
 
     m_tetPSO = std::make_unique<Gradient::PipelineState>(psoDesc);
     m_tetPSO->Build(device);
+
+    // Key writing PSO and root signature
+    m_keyWritingRS.AddCBV(0, 0);
+    m_keyWritingRS.AddRootSRV(0, 0); // instances
+    m_keyWritingRS.AddUAV(0, 0); // keys
+    m_keyWritingRS.AddUAV(1, 0); // indices
+    m_keyWritingRS.Build(device, true);
+
+    m_keyWritingPSO = CreateComputePipelineState(device, L"WriteSortingKeys_CS.cso", m_keyWritingRS.Get());
+
+    // Set up FidelityFX interface.
+
+    size_t scratchMemorySize = ffxGetScratchMemorySizeDX12(2);
+    m_ffxScratchMemory.resize(scratchMemorySize);
+
+    auto ffxDevice = ffxGetDeviceDX12(device);
+    ThrowIfFfxFailed(ffxGetInterfaceDX12(&m_ffxInterface, 
+        ffxDevice, 
+        m_ffxScratchMemory.data(), 
+        m_ffxScratchMemory.size(), 
+        2));
+
+
+    FfxParallelSortContextDescription contextDesc = {};
+    contextDesc.backendInterface = m_ffxInterface;
+    contextDesc.maxEntries = 65536;
+    contextDesc.flags = FfxParallelSortInitializationFlagBits::FFX_PARALLELSORT_PAYLOAD_SORT;
+
+    ThrowIfFfxFailed(ffxParallelSortContextCreate(&m_parallelSortContext, &contextDesc));
 
     CreateTetrahedronInstances();
 }
@@ -516,6 +621,7 @@ void Game::CreateTetrahedronInstances()
 {
     auto device = m_deviceResources->GetD3DDevice();
     auto cq = m_deviceResources->GetCommandQueue();
+    auto gmm = Gradient::GraphicsMemoryManager::Get();
 
     // Create instances
 
@@ -539,7 +645,27 @@ void Game::CreateTetrahedronInstances()
         });
 
     auto bm = Gradient::BufferManager::Get();
-    m_tetInstances = bm->CreateInstanceBuffer(device, cq, instances);
+    m_tetInstances = bm->CreateBuffer(device, cq, instances);
+
+    // Create keys
+    std::vector<float> keys;
+    keys.resize(instances.size());
+
+    m_tetKeys = bm->CreateBuffer(device, cq, keys);
+    bm->GetInstanceBuffer(m_tetKeys)->Resource.Get()->SetName(L"Tetrahedron Keys");
+    m_tetKeysUAV = gmm->CreateBufferUAV(device, bm->GetInstanceBuffer(m_tetKeys)->Resource.Get(), sizeof(float));
+
+    // Create payload
+    // These are indices into the main StructuredBuffer
+    std::vector<uint32_t> payload;
+    for (uint32_t i = 0; i < instances.size(); i++)
+    {
+        payload.push_back(i);
+    }
+
+    m_tetIndices = bm->CreateBuffer(device, cq, payload);
+    bm->GetInstanceBuffer(m_tetIndices)->Resource.Get()->SetName(L"Tetrahedron Indices");
+    m_tetIndicesUAV = gmm->CreateBufferUAV(device, bm->GetInstanceBuffer(m_tetIndices)->Resource.Get(), sizeof(float));
 }
 
 void Game::CleanupResources()
@@ -547,6 +673,10 @@ void Game::CleanupResources()
     m_floor.reset();
     m_effect.reset();
     m_renderTarget.reset();
+
+    ThrowIfFfxFailed(ffxParallelSortContextDestroy(&m_parallelSortContext));
+
+    Gradient::BufferManager::Shutdown();
     Gradient::GraphicsMemoryManager::Shutdown();
 }
 

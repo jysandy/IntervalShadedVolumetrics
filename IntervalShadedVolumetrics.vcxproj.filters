@@ -82,5 +82,6 @@
   <ItemGroup>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />
     <FxCompile Include="Shaders\Interval_PS.hlsl" />
+    <FxCompile Include="Shaders\WriteSortingKeys_CS.hlsl" />
   </ItemGroup>
 </Project>

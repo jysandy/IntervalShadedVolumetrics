@@ -77,6 +77,7 @@
     <None Include="packages.config" />
     <None Include="Shaders\TetrahedronPipeline.hlsli" />
     <None Include="Shaders\Quaternion.hlsli" />
+    <None Include="GetLibraries.ps1" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />

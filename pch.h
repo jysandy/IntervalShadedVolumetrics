@@ -56,6 +56,7 @@
 #include <stdexcept>
 #include <system_error>
 #include <tuple>
+#include <bit>  // needed because FFX uses std::popcount but doesn't include <bit>
 
 #ifdef _DEBUG
 #include <dxgidebug.h>

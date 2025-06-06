@@ -15,6 +15,8 @@
 #include "Gradient/ReadData.h"
 #include "Gradient/Math.h"
 
+#include <FidelityFX/host/ffx_parallelsort.h>
+
 extern void ExitGame() noexcept;
 
 using namespace DirectX;

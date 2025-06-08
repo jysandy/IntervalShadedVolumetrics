@@ -51,6 +51,26 @@ float3 ScatteredLight(float3 absorption,
     return phase * irradiance * transmissionFactor;
 }
 
+float3 AmbientLight(float3 absorption,
+    float opticalDepth,
+    float3 irradiance)
+{
+    float phase = 1.f / (4 * PI);
+    
+    float3 transmissionFactor = (1.xxx - exp(-absorption * opticalDepth)) / absorption;
+
+    if (absorption.x < EPSILON)
+        transmissionFactor.x = opticalDepth;
+
+    if (absorption.y < EPSILON)
+        transmissionFactor.y = opticalDepth;
+
+    if (absorption.z < EPSILON)
+        transmissionFactor.z = opticalDepth;
+    
+    return phase * irradiance * transmissionFactor;
+}
+
 BlendOutput Interval_PS(VertexType input)
 {
     float4 minpoint = float4(input.A.xy, input.A.z, 1.0);
@@ -70,8 +90,11 @@ BlendOutput Interval_PS(VertexType input)
 
     float3 V = normalize(g_CameraPosition - a.xyz);
     float3 L = normalize(-g_LightDirection);
-    float3 R = g_LightBrightness * g_LightColor * 0.0005;
-    float3 cscat = ScatteredLight(absorption, opticalDepth, R, L, V, g_ScatteringAsymmetry);
+    float3 R = g_LightBrightness * g_LightColor * 0.005;
+    float3 cscat 
+        = ScatteredLight(absorption, opticalDepth, R, L, V, g_ScatteringAsymmetry)
+            + AmbientLight(absorption, opticalDepth, 5 * R)
+    ;
 
     ret.CScat = float4(cscat, 1);
     

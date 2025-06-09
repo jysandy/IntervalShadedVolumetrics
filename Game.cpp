@@ -271,7 +271,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
 
     if (ImGui::TreeNodeEx("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::DragFloat3("Target Position", &m_guiTargetWorld.x, 0.01f, -100.f, 100.f);
+        ImGui::DragFloat3("Target Position", &m_guiTargetWorld.x, 0.05f, -100.f, 100.f);
         ImGui::TreePop();
     }
 
@@ -731,7 +731,7 @@ void Game::CreateTetrahedronInstances()
             position + 2.f * rotationAxis,
             densityMultiplier,
             Vector3::Zero,
-            0,
+            densityMultiplier * 0.5f,
             position,
             0,
             Quaternion::CreateFromAxisAngle(rotationAxis, angle)

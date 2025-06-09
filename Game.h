@@ -61,9 +61,9 @@ public:
         DirectX::XMFLOAT3 Position;
         float AbsorptionScale;
         DirectX::XMFLOAT3 Velocity;
-        float Pad;
+        float Mass;
         DirectX::XMFLOAT3 TargetPosition;
-        float Pad2;
+        float Pad;
         DirectX::XMFLOAT4 RotationQuat;
     };
 

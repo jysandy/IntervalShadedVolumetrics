@@ -5,6 +5,7 @@ struct BlendOutput
 {
     float4 CScat : SV_Target0;
     float4 Tv : SV_Target1;
+    float Depth : SV_Depth;
 };
 
 static const float PI = 3.14159265359;
@@ -82,6 +83,12 @@ BlendOutput Interval_PS(VertexType input)
     b = b / b.w;
 
     BlendOutput ret;
+
+    float4 reprojected = float4(mul(a, view).xyz, 1);
+    reprojected.xyz *= -1;
+    reprojected = mul(reprojected, persp);
+    reprojected /= reprojected.w;
+    ret.Depth = reprojected.z;
     
     float3 absorption = input.DensityScale * g_Absorption * (1.xxx - g_Albedo) * 0.01f;
     float opticalDepth = length(b - a);

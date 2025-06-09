@@ -539,6 +539,7 @@ void Game::CreateDeviceDependentResources()
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     // TODO: Maybe reverse the winding order in the mesh shader instead of doing this?
     psoDesc.RasterizerState = DirectX::CommonStates::CullNone;
+    psoDesc.DepthStencilState = DirectX::CommonStates::DepthRead;
 
     auto blendState = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
     blendState.RenderTarget[0].BlendEnable = TRUE;

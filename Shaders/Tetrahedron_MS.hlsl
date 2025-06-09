@@ -350,10 +350,13 @@ void Tetrahedron_MS(
         float animationScale = 0.5 * (1 + sin(4 * g_totalTime + 69 * noise));
         animationScale = lerp(0.8, 1, animationScale);
         
-        float timeJitter = frac(g_totalTime) * 26.8;
+        float timeJitter = frac(g_totalTime) * 26.8 * 0;
+        
+        float3 axis = float3(frac(69 * noise), frac(420 * noise), frac(42 * noise));
+        axis = normalize(axis);
         
         // TODO: Put the rotation into per-instance data
-        float4x4 rotation = QuatTo4x4(QuatFromAxisAngle(float3(0, 0, 1),
+        float4x4 rotation = QuatTo4x4(QuatFromAxisAngle(axis,
             0 * (g_totalTime * 256.f + timeJitter)
             + 69 * noise));
         float4x4 model = mul(scale, rotation);

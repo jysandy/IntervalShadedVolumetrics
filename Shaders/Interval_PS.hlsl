@@ -92,8 +92,8 @@ BlendOutput Interval_PS(VertexType input)
     float3 L = normalize(-g_LightDirection);
     float3 R = g_LightBrightness * g_LightColor * 0.005;
     float3 cscat 
-        = ScatteredLight(absorption, opticalDepth, R, L, V, g_ScatteringAsymmetry)
-            + AmbientLight(absorption, opticalDepth, 5 * R)
+        = 0.60 * ScatteredLight(absorption, opticalDepth, R, L, V, g_ScatteringAsymmetry)
+            + 0.40 * AmbientLight(absorption, opticalDepth, R)
     ;
 
     ret.CScat = float4(cscat, 1);

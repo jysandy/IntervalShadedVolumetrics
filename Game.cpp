@@ -127,7 +127,152 @@ void Game::Update(DX::StepTimer const& timer)
 }
 #pragma endregion
 
+
 #pragma region Frame Render
+
+void Game::WriteSortingKeys(ID3D12GraphicsCommandList6* cl, 
+    const Constants& constants)
+{
+    auto bm = Gradient::BufferManager::Get();
+
+    bm->GetInstanceBuffer(m_tetInstances)->Resource.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    bm->GetInstanceBuffer(m_tetKeys)->Resource.Transition(cl, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(cl, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+    m_keyWritingRS.SetOnCommandList(cl);
+    cl->SetPipelineState(m_keyWritingPSO.Get());
+
+    m_keyWritingRS.SetCBV(cl, 0, 0, constants);
+    m_keyWritingRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
+    m_keyWritingRS.SetUAV(cl, 0, 0, m_tetKeysUAV);
+    m_keyWritingRS.SetUAV(cl, 1, 0, m_tetIndicesUAV);
+
+    cl->Dispatch(bm->GetInstanceBuffer(m_tetInstances)->InstanceCount, 1, 1);
+}
+
+void Game::DispatchParallelSort(ID3D12GraphicsCommandList6* cl,
+    Gradient::BufferManager::InstanceBufferEntry* keys,
+    Gradient::BufferManager::InstanceBufferEntry* payload)
+{
+    auto bm = Gradient::BufferManager::Get();
+
+    keys->Resource.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    payload->Resource.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+
+    FfxParallelSortDispatchDescription dispatchDesc = {};
+
+    auto resourceDesc = ffxGetResourceDescriptionDX12(keys->Resource.Get(),
+        FFX_RESOURCE_USAGE_UAV);
+    resourceDesc.format = FfxSurfaceFormat::FFX_SURFACE_FORMAT_R32_FLOAT;
+    resourceDesc.stride = sizeof(float);
+    dispatchDesc.commandList = ffxGetCommandListDX12(cl);
+    dispatchDesc.keyBuffer = ffxGetResourceDX12(keys->Resource.Get(),
+        resourceDesc,
+        L"Tetrahedron_KeyBuffer",
+        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ
+    );
+
+    auto payloadResourceDesc = ffxGetResourceDescriptionDX12(
+        payload->Resource.Get(), FFX_RESOURCE_USAGE_UAV);
+    payloadResourceDesc.format = FFX_SURFACE_FORMAT_R32_UINT;
+    payloadResourceDesc.stride = sizeof(uint32_t);
+    dispatchDesc.payloadBuffer = ffxGetResourceDX12(
+        payload->Resource.Get(),
+        payloadResourceDesc,
+        L"Tetrahedron_PayloadBuffer",
+        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ
+    );
+    dispatchDesc.numKeysToSort = keys->InstanceCount;
+
+    ThrowIfFfxFailed(ffxParallelSortContextDispatch(&m_parallelSortContext, &dispatchDesc));
+}
+
+void Game::RenderProps(ID3D12GraphicsCommandList6* cl, 
+    Vector3 normalizedLightDirection)
+{
+    m_effect->SetLightEnabled(0, true);
+    m_effect->SetLightDiffuseColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
+    m_effect->SetLightSpecularColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
+    m_effect->SetDiffuseColor({ 0.7, 0.7, 0.7 });
+    m_effect->SetSpecularPower(128);
+    m_effect->SetAmbientLightColor(0.001 * Vector3(m_guiLightColor));
+    m_effect->SetLightDirection(0, normalizedLightDirection);
+    m_effect->SetWorld(Matrix::CreateScale({ 50, 0.5, 50 })
+        * Matrix::CreateTranslation({ 0, -10.f, 0 }));
+    m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
+    m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
+
+    m_effect->Apply(cl);
+
+    m_floor->Draw(cl);
+
+    m_effect->SetWorld(Matrix::CreateScale({ 1, 1, 1 })
+        * Matrix::CreateTranslation({ 0, -5.f, 0 }));
+    m_effect->Apply(cl);
+    m_sphere->Draw(cl);
+}
+
+void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
+    const Constants& constants)
+{
+    auto bm = Gradient::BufferManager::Get();
+
+    m_tetRS.SetOnCommandList(cl);
+    m_tetPSO->Set(cl, true);
+
+    m_tetRS.SetCBV(cl, 0, 0, constants);
+    m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
+    m_tetRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
+
+    cl->DispatchMesh(
+        Gradient::Math::DivRoundUp(
+            bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
+            32), 
+        1, 1);
+}
+
+void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
+{
+    ImGui_ImplDX12_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("Performance");
+
+    float fps = m_timer.GetFramesPerSecond();
+
+    ImGui::Text("FPS: %.2f", fps);
+    ImGui::Text("msPF: %.2f", 1000.f / fps);
+
+    ImGui::End();
+
+    ImGui::Begin("Options");
+
+    if (ImGui::TreeNodeEx("Material", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
+        ImGui::SliderFloat("Absorption", &m_guiAbsorption, 0, 10);
+        ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
+
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNodeEx("Light", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::DragFloat3("Direction", &m_guiLightDirection.x, 0.001f, -1.f, 1.f);
+        ImGui::SliderFloat("Brightness", &m_guiLightBrightness, 0, 10);
+        ImGui::ColorEdit3("Color", &m_guiLightColor.x);
+
+        ImGui::TreePop();
+    }
+
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(),
+        cl);
+}
+
 // Draws the scene.
 void Game::Render()
 {
@@ -186,128 +331,25 @@ void Game::Render()
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Sort Tetrahedrons");
 
-    bm->GetInstanceBuffer(m_tetInstances)->Resource.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    bm->GetInstanceBuffer(m_tetKeys)->Resource.Transition(cl, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-    bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(cl, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-
-    m_keyWritingRS.SetOnCommandList(cl);
-    cl->SetPipelineState(m_keyWritingPSO.Get());
-
-    m_keyWritingRS.SetCBV(cl, 0, 0, constants);
-    m_keyWritingRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
-    m_keyWritingRS.SetUAV(cl, 0, 0, m_tetKeysUAV);
-    m_keyWritingRS.SetUAV(cl, 1, 0, m_tetIndicesUAV);
-
-    cl->Dispatch(instanceCount, 1, 1);
-
-    auto keysBuffer = bm->GetInstanceBuffer(m_tetKeys);
-    auto& keysResource = keysBuffer->Resource;
-    keysResource.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-
-    FfxParallelSortDispatchDescription dispatchDesc = {};
-
-    auto resourceDesc = ffxGetResourceDescriptionDX12(keysResource.Get(), FFX_RESOURCE_USAGE_UAV);
-    resourceDesc.format = FfxSurfaceFormat::FFX_SURFACE_FORMAT_R32_FLOAT;
-    resourceDesc.stride = sizeof(float);
-    dispatchDesc.commandList = ffxGetCommandListDX12(cl);
-    dispatchDesc.keyBuffer = ffxGetResourceDX12(keysResource.Get(),
-        resourceDesc,
-        L"Tetrahedron_KeyBuffer",
-        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ
-    );
-
-    auto payloadResourceDesc = ffxGetResourceDescriptionDX12(
-        bm->GetInstanceBuffer(m_tetIndices)->Resource.Get(), FFX_RESOURCE_USAGE_UAV);
-    payloadResourceDesc.format = FFX_SURFACE_FORMAT_R32_UINT;
-    payloadResourceDesc.stride = sizeof(uint32_t);
-    dispatchDesc.payloadBuffer = ffxGetResourceDX12(
-        bm->GetInstanceBuffer(m_tetIndices)->Resource.Get(),
-        payloadResourceDesc,
-        L"Tetrahedron_PayloadBuffer",
-        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ
-    );
-    dispatchDesc.numKeysToSort = instanceCount;
-
-    ThrowIfFfxFailed(ffxParallelSortContextDispatch(&m_parallelSortContext, &dispatchDesc));
+    WriteSortingKeys(cl, constants);
+    DispatchParallelSort(cl,
+            bm->GetInstanceBuffer(m_tetKeys),
+            bm->GetInstanceBuffer(m_tetIndices)
+        );
 
     cl->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
     PIXEndEvent(cl);
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Render");
 
-    m_effect->SetLightEnabled(0, true);
-    m_effect->SetLightDiffuseColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
-    m_effect->SetLightSpecularColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
-    m_effect->SetDiffuseColor({ 0.7, 0.7, 0.7 });
-    m_effect->SetSpecularPower(128);
-    m_effect->SetAmbientLightColor(0.001 * Vector3(m_guiLightColor));
-    m_effect->SetLightDirection(0, lightDirection);
-    m_effect->SetWorld(Matrix::CreateScale({50, 0.5, 50}) 
-        * Matrix::CreateTranslation({0, -10.f, 0}));
-    m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
-    m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
-
-    m_effect->Apply(cl);
-
-    m_floor->Draw(cl);
-    
-    m_effect->SetWorld(Matrix::CreateScale({ 1, 1, 1 })
-        * Matrix::CreateTranslation({ 0, -5.f, 0 }));
-    m_effect->Apply(cl);
-    m_sphere->Draw(cl);
-
-    m_tetRS.SetOnCommandList(cl);
-    m_tetPSO->Set(cl, true);
-
-    m_tetRS.SetCBV(cl, 0, 0, constants);
-    m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
-    m_tetRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
-
-    cl->DispatchMesh(Gradient::Math::DivRoundUp(instanceCount, 32), 1, 1);
+    RenderProps(cl, lightDirection);
+    RenderParticles(cl, constants);
 
     PIXEndEvent(cl);
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"GUI");
 
-    ImGui_ImplDX12_NewFrame();
-    ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
-
-    ImGui::Begin("Performance");
-
-    float fps = m_timer.GetFramesPerSecond();
-
-    ImGui::Text("FPS: %.2f", fps);
-    ImGui::Text("msPF: %.2f", 1000.f / fps);
-
-    ImGui::End();
-
-    ImGui::Begin("Options");
-
-    if (ImGui::TreeNodeEx("Material", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
-        ImGui::SliderFloat("Absorption", &m_guiAbsorption, 0, 10);
-        ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
-
-        ImGui::TreePop();
-    }
-
-    if (ImGui::TreeNodeEx("Light", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        ImGui::DragFloat3("Direction", &m_guiLightDirection.x, 0.001f, -1.f, 1.f);
-        ImGui::SliderFloat("Brightness", &m_guiLightBrightness, 0, 10);
-        ImGui::ColorEdit3("Color", &m_guiLightColor.x);
-
-        ImGui::TreePop();
-    }
-
-    ImGui::End();
-
-    ImGui::Render();
-    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(),
-        cl);
+    RenderGUI(cl);
 
     PIXEndEvent(cl);
 
@@ -639,14 +681,6 @@ void Game::CreateTetrahedronInstances()
 
         instances.push_back({ position, densityMultiplier });
     }
-
-    std::sort(instances.begin(), instances.end(),
-        [](InstanceData a, InstanceData b)
-        {
-            // Sort by lowest Z first.
-            // Works as long as we're looking down -ve Z.
-            return a.Position.z < b.Position.z;
-        });
 
     auto bm = Gradient::BufferManager::Get();
     m_tetInstances = bm->CreateBuffer(device, cq, instances);

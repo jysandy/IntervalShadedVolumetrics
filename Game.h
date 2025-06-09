@@ -108,6 +108,16 @@ private:
     void CreateWindowSizeDependentResources();
     void CreateTetrahedronInstances();
 
+    void WriteSortingKeys(ID3D12GraphicsCommandList6* cl, const Constants& constants);
+    void DispatchParallelSort(ID3D12GraphicsCommandList6* cl,
+        Gradient::BufferManager::InstanceBufferEntry* keys,
+        Gradient::BufferManager::InstanceBufferEntry* payload);
+    void RenderProps(ID3D12GraphicsCommandList6* cl, 
+        DirectX::SimpleMath::Vector3 lightDirection);
+    void RenderParticles(ID3D12GraphicsCommandList6* cl,
+        const Constants& constants);
+    void RenderGUI(ID3D12GraphicsCommandList6* cl);
+
     // Device resources.
     std::unique_ptr<DX::DeviceResources>        m_deviceResources;
 

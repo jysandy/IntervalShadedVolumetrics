@@ -106,9 +106,9 @@ void Game::Initialize(HWND window, int width, int height)
 void Game::Tick()
 {
     m_timer.Tick([&]()
-    {
-        Update(m_timer);
-    });
+        {
+            Update(m_timer);
+        });
 
     Render();
 }
@@ -130,7 +130,7 @@ void Game::Update(DX::StepTimer const& timer)
 
 #pragma region Frame Render
 
-void Game::WriteSortingKeys(ID3D12GraphicsCommandList6* cl, 
+void Game::WriteSortingKeys(ID3D12GraphicsCommandList6* cl,
     const Constants& constants)
 {
     auto bm = Gradient::BufferManager::Get();
@@ -191,7 +191,7 @@ void Game::DispatchParallelSort(ID3D12GraphicsCommandList6* cl,
     ThrowIfFfxFailed(ffxParallelSortContextDispatch(&m_parallelSortContext, &dispatchDesc));
 }
 
-void Game::RenderProps(ID3D12GraphicsCommandList6* cl, 
+void Game::RenderProps(ID3D12GraphicsCommandList6* cl,
     Vector3 normalizedLightDirection)
 {
     m_effect->SetLightEnabled(0, true);
@@ -231,7 +231,7 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
     cl->DispatchMesh(
         Gradient::Math::DivRoundUp(
             bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
-            32), 
+            32),
         1, 1);
 }
 
@@ -353,18 +353,18 @@ void Game::Render()
     constants.NumInstances = instanceCount;
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Simulate particles");
-    
+
     SimulateParticles(cl, constants);
-    
+
     PIXEndEvent(cl);
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Sort particles");
 
     WriteSortingKeys(cl, constants);
     DispatchParallelSort(cl,
-            bm->GetInstanceBuffer(m_tetKeys),
-            bm->GetInstanceBuffer(m_tetIndices)
-        );
+        bm->GetInstanceBuffer(m_tetKeys),
+        bm->GetInstanceBuffer(m_tetIndices)
+    );
 
     cl->SetDescriptorHeaps(static_cast<UINT>(std::size(heaps)), heaps);
     PIXEndEvent(cl);
@@ -391,7 +391,7 @@ void Game::Render()
     m_renderTarget->GetSingleSampledBarrierResource()->Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     m_tonemapper->SetHDRSourceTexture(m_renderTarget->GetSRV()->GetGPUHandle());
     m_tonemapperHDR10->SetHDRSourceTexture(m_renderTarget->GetSRV()->GetGPUHandle());
-    
+
 
     switch (m_deviceResources->GetColorSpace())
     {
@@ -403,7 +403,7 @@ void Game::Render()
         m_tonemapperHDR10->Process(cl);
         break;
     }
-    
+
 
     PIXEndEvent(cl);
 
@@ -544,7 +544,7 @@ void Game::CreateDeviceDependentResources()
     Gradient::GraphicsMemoryManager::Initialize(device);
     Gradient::BufferManager::Initialize();
 
-    m_floor = GeometricPrimitive::CreateBox({1, 1, 1});
+    m_floor = GeometricPrimitive::CreateBox({ 1, 1, 1 });
     m_sphere = GeometricPrimitive::CreateSphere();
 
     m_world = Matrix::Identity;
@@ -560,7 +560,7 @@ void Game::CreateDeviceDependentResources()
 
     m_tonemapperHDR10 = std::make_unique<ToneMapPostProcess>(device,
         backBufferRTState,
-        ToneMapPostProcess::None, 
+        ToneMapPostProcess::None,
         ToneMapPostProcess::ST2084);
 
     // Initialize ImGUI
@@ -639,7 +639,7 @@ void Game::CreateDeviceDependentResources()
     m_simulationRS.AddUAV(0, 0); // instances
     m_simulationRS.Build(device, true);
 
-    m_simulationPSO = CreateComputePipelineState(device, 
+    m_simulationPSO = CreateComputePipelineState(device,
         L"SimulateParticles_CS.cso",
         m_simulationRS.Get());
 
@@ -649,10 +649,10 @@ void Game::CreateDeviceDependentResources()
     m_ffxScratchMemory.resize(scratchMemorySize);
 
     auto ffxDevice = ffxGetDeviceDX12(device);
-    ThrowIfFfxFailed(ffxGetInterfaceDX12(&m_ffxInterface, 
-        ffxDevice, 
-        m_ffxScratchMemory.data(), 
-        m_ffxScratchMemory.size(), 
+    ThrowIfFfxFailed(ffxGetInterfaceDX12(&m_ffxInterface,
+        ffxDevice,
+        m_ffxScratchMemory.data(),
+        m_ffxScratchMemory.size(),
         2));
 
 
@@ -696,7 +696,7 @@ void Game::CreateWindowSizeDependentResources()
         CommonStates::CullNone,
         rtState);
 
-    m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd); 
+    m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd);
 }
 
 void Game::CreateTetrahedronInstances()
@@ -717,13 +717,23 @@ void Game::CreateTetrahedronInstances()
 
         float densityMultiplier = std::abs(RandomFloat() * 4.f - 1.f);
 
-        instances.push_back({ position, densityMultiplier });
+        Vector3 rotationAxis = { RandomFloat(), RandomFloat(), RandomFloat() };
+        rotationAxis = rotationAxis * 2.f - Vector3(1.f, 1.f, 1.f);
+        rotationAxis.Normalize();
+        float angle = RandomFloat() * DirectX::XM_2PI;
+
+        instances.push_back(
+            {
+            position,
+            densityMultiplier ,
+            Quaternion::CreateFromAxisAngle(rotationAxis, angle)
+            });
     }
 
     auto bm = Gradient::BufferManager::Get();
     m_tetInstances = bm->CreateBuffer(device, cq, instances);
     bm->GetInstanceBuffer(m_tetInstances)->Resource.Get()->SetName(L"Tetrahedron Instances");
-    m_tetInstancesUAV = gmm->CreateBufferUAV(device, 
+    m_tetInstancesUAV = gmm->CreateBufferUAV(device,
         bm->GetInstanceBuffer(m_tetInstances)->Resource.Get(), sizeof(InstanceData));
 
 

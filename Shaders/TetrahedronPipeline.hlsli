@@ -1,6 +1,8 @@
 #ifndef __TETRAHEDRON_PIPELINE_HLSLI__
 #define __TETRAHEDRON_PIPELINE_HLSLI__
 
+#include "Quaternion.hlsli"                                     
+
 cbuffer Constants : register(b0, space0)
 {
     float4x4 view;
@@ -27,7 +29,8 @@ cbuffer Constants : register(b0, space0)
 struct InstanceData
 {
     float3 WorldPosition;
-    float DensityScale;
+    float AbsorptionScale;
+    Quaternion RotationQuat;
 };
 
 struct VertexType
@@ -39,7 +42,7 @@ struct VertexType
     // TODO: Rename this to something reasonable
     float4 A : POSITION1;
     
-    float DensityScale : DENSITY;
+    float AbsorptionScale : ABSORPTION;
 };
 
 #endif

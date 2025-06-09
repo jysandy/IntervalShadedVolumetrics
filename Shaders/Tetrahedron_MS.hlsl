@@ -345,27 +345,12 @@ void Tetrahedron_MS(
             0, 0, 0, 1
         );
         
-        float3 worldPosition = GetInstanceData(instanceIndex).WorldPosition;
-        float noise = dot(worldPosition, worldPosition);
+        InstanceData instanceData = GetInstanceData(instanceIndex);
         
-        float animationScale = 0.5 * (1 + sin(4 * g_totalTime + 69 * noise));
-        animationScale = lerp(0.8, 1, animationScale);
-        
-        float timeJitter = frac(g_totalTime) * 26.8 * 0;
-        
-        float3 axis = float3(frac(69 * noise), frac(420 * noise), frac(42 * noise));
-        axis = normalize(axis);
-        
-        // TODO: Put the rotation into per-instance data
-        float4x4 rotation = QuatTo4x4(QuatFromAxisAngle(axis,
-            0 * (g_totalTime * 256.f + timeJitter)
-            + 69 * noise));
+        float3 worldPosition = instanceData.WorldPosition;
+        float4x4 rotation = QuatTo4x4(instanceData.RotationQuat);
         float4x4 model = mul(scale, rotation);
-        
-        // TODO: Move translation to a compute shader
-        model._41_42_43 = //float3(animationScale.xx, 1) * 
-            worldPosition;
-        
+        model._41_42_43 = worldPosition;
         float4x4 modelView = mul(model, view);
         
         tet_t tet;
@@ -512,7 +497,7 @@ void Tetrahedron_MS(
         {
             verts[prefixVertices + j].Position = float4(proxy.pos[j].xy, 0, 1);
             verts[prefixVertices + j].A = float4(proxy.pos[j].xy, proxy.pos[j].z, proxy.pos[j].w);
-            verts[prefixVertices + j].DensityScale = GetInstanceData(instanceIndex).DensityScale;
+            verts[prefixVertices + j].AbsorptionScale = GetInstanceData(instanceIndex).AbsorptionScale;
 
         }
 

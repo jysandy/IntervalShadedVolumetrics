@@ -59,8 +59,8 @@ public:
     {
         // Not supporting scale to save space
         DirectX::XMFLOAT3 Position;
-        float pad;
-        //DirectX::XMFLOAT4 RotationQuat;
+        float AbsorptionScale;
+        DirectX::XMFLOAT4 RotationQuat;
     };
 
 

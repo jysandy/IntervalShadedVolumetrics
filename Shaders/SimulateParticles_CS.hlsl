@@ -14,7 +14,7 @@ void SimulateParticles_CS(uint3 DTid : SV_DispatchThreadID)
         normalize(targetPosition - worldPosition);
     
     // This is not independent of mass
-    float3 dampingForce = -0.1f * Instances[DTid.x].Velocity;
+    float3 dampingForce = -0.4f * Instances[DTid.x].Velocity;
     
     float3 acceleration 
         = attractionAcceleration + (dampingForce / Instances[DTid.x].Mass);

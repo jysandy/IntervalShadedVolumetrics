@@ -33,6 +33,7 @@ class Game final : public DX::IDeviceNotify
 public:
     struct __declspec(align(16)) Constants
     {
+        DirectX::XMMATRIX TargetWorld;
         DirectX::XMMATRIX View;
         DirectX::XMMATRIX Proj;
         DirectX::XMMATRIX InverseViewProj;
@@ -136,8 +137,6 @@ private:
     std::unique_ptr<DirectX::CommonStates> m_states;
 
 
-    DirectX::SimpleMath::Matrix m_world;
-
     std::unique_ptr<DirectX::GeometricPrimitive> m_floor;
     std::unique_ptr<DirectX::GeometricPrimitive> m_sphere;
     std::unique_ptr<DirectX::BasicEffect> m_effect;
@@ -169,6 +168,8 @@ private:
 
     DirectX::XMFLOAT3 m_guiLightColor = { 1, 0.8, 0.4 };
     float m_guiScatteringAsymmetry = 0.75f;
+
+    DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 0, 0 };
 
     // FFX stuff
 

@@ -121,7 +121,6 @@ void Game::Update(DX::StepTimer const& timer)
     m_camera.Update(timer);
 
     auto time = static_cast<float>(timer.GetTotalSeconds());
-    m_world = Matrix::CreateScale(2) * Matrix::CreateRotationZ(cosf(time) * 2.f);
 
     PIXEndEvent();
 }
@@ -270,6 +269,12 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::TreePop();
     }
 
+    if (ImGui::TreeNodeEx("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::DragFloat3("Target Position", &m_guiTargetWorld.x, 0.01f, -100.f, 100.f);
+        ImGui::TreePop();
+    }
+
     ImGui::End();
 
     ImGui::Render();
@@ -335,6 +340,7 @@ void Game::Render()
     auto view = m_camera.GetCamera().GetViewMatrix() * Matrix::CreateScale({ -1, -1, -1 });
     auto proj = m_camera.GetCamera().GetProjectionMatrix();
 
+    constants.TargetWorld = Matrix::CreateTranslation(m_guiTargetWorld).Transpose();
     constants.View = view.Transpose();
     constants.Proj = proj.Transpose();
     constants.InverseViewProj = (view * proj).Invert().Transpose();
@@ -546,8 +552,6 @@ void Game::CreateDeviceDependentResources()
 
     m_floor = GeometricPrimitive::CreateBox({ 1, 1, 1 });
     m_sphere = GeometricPrimitive::CreateSphere();
-
-    m_world = Matrix::Identity;
 
     m_states = std::make_unique<DirectX::CommonStates>(device);
 

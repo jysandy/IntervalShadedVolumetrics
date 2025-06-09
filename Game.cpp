@@ -277,6 +277,26 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         cl);
 }
 
+void Game::SimulateParticles(ID3D12GraphicsCommandList6* cl, const Constants& constants)
+{
+    auto bm = Gradient::BufferManager::Get();
+
+    bm->GetInstanceBuffer(m_tetInstances)->Resource.Transition(
+        cl, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+    m_simulationRS.SetOnCommandList(cl);
+    cl->SetPipelineState(m_simulationPSO.Get());
+
+    m_simulationRS.SetCBV(cl, 0, 0, constants);
+    m_simulationRS.SetUAV(cl, 0, 0, m_tetInstancesUAV);
+
+    cl->Dispatch(
+        Gradient::Math::DivRoundUp(
+            bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
+            32u),
+        1, 1);
+}
+
 // Draws the scene.
 void Game::Render()
 {
@@ -327,12 +347,18 @@ void Game::Render()
     constants.ScatteringAsymmetry = m_guiScatteringAsymmetry;
     constants.LightColor = m_guiLightColor;
     constants.TotalTime = m_timer.GetTotalSeconds();
+    constants.DeltaTime = m_timer.GetElapsedSeconds();
     auto instances = bm->GetInstanceBuffer(m_tetInstances);
     auto instanceCount = instances->InstanceCount;
     constants.NumInstances = instanceCount;
 
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Simulate particles");
+    
+    SimulateParticles(cl, constants);
+    
+    PIXEndEvent(cl);
 
-    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Sort Tetrahedrons");
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Sort particles");
 
     WriteSortingKeys(cl, constants);
     DispatchParallelSort(cl,
@@ -600,13 +626,22 @@ void Game::CreateDeviceDependentResources()
     m_tetPSO->Build(device);
 
     // Key writing PSO and root signature
-    m_keyWritingRS.AddCBV(0, 0);
+    m_keyWritingRS.AddCBV(0, 0); // constants
     m_keyWritingRS.AddRootSRV(0, 0); // instances
     m_keyWritingRS.AddUAV(0, 0); // keys
     m_keyWritingRS.AddUAV(1, 0); // indices
     m_keyWritingRS.Build(device, true);
 
     m_keyWritingPSO = CreateComputePipelineState(device, L"WriteSortingKeys_CS.cso", m_keyWritingRS.Get());
+
+    // Simulation PSO and root signature
+    m_simulationRS.AddCBV(0, 0); // constants
+    m_simulationRS.AddUAV(0, 0); // instances
+    m_simulationRS.Build(device, true);
+
+    m_simulationPSO = CreateComputePipelineState(device, 
+        L"SimulateParticles_CS.cso",
+        m_simulationRS.Get());
 
     // Set up FidelityFX interface.
 
@@ -687,6 +722,10 @@ void Game::CreateTetrahedronInstances()
 
     auto bm = Gradient::BufferManager::Get();
     m_tetInstances = bm->CreateBuffer(device, cq, instances);
+    bm->GetInstanceBuffer(m_tetInstances)->Resource.Get()->SetName(L"Tetrahedron Instances");
+    m_tetInstancesUAV = gmm->CreateBufferUAV(device, 
+        bm->GetInstanceBuffer(m_tetInstances)->Resource.Get(), sizeof(InstanceData));
+
 
     // Create keys
     std::vector<float> keys;

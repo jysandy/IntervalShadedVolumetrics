@@ -4,6 +4,7 @@
 #include "TetrahedronPipeline.hlsli"
 #include "Quaternion.hlsli"
 
+StructuredBuffer<InstanceData> Instances : register(t0, space0);
 StructuredBuffer<uint> Indices : register(t1, space0);
 
 InstanceData GetInstanceData(uint index)

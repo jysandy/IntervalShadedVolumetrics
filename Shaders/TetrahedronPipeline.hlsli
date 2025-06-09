@@ -21,6 +21,7 @@ cbuffer Constants : register(b0, space0)
     
     float g_totalTime;
     float g_NumInstances;
+    float g_DeltaTime;
 };
 
 struct InstanceData
@@ -28,8 +29,6 @@ struct InstanceData
     float3 WorldPosition;
     float DensityScale;
 };
-
-StructuredBuffer<InstanceData> Instances : register(t0, space0);
 
 struct VertexType
 {

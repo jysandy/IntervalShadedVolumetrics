@@ -50,6 +50,9 @@ public:
 
         float TotalTime;
         float NumInstances;
+        float DeltaTime;
+
+        float Pad = 0;
     };
 
     struct __declspec(align(16)) InstanceData
@@ -107,6 +110,7 @@ private:
     void CreateWindowSizeDependentResources();
     void CreateTetrahedronInstances();
 
+    void SimulateParticles(ID3D12GraphicsCommandList6* cl, const Constants& constants);
     void WriteSortingKeys(ID3D12GraphicsCommandList6* cl, const Constants& constants);
     void DispatchParallelSort(ID3D12GraphicsCommandList6* cl,
         Gradient::BufferManager::InstanceBufferEntry* keys,
@@ -140,6 +144,7 @@ private:
     Gradient::BufferManager::InstanceBufferHandle m_tetInstances;
     Gradient::BufferManager::InstanceBufferHandle m_tetKeys;
     Gradient::BufferManager::InstanceBufferHandle m_tetIndices;
+    Gradient::GraphicsMemoryManager::DescriptorView m_tetInstancesUAV;
     Gradient::GraphicsMemoryManager::DescriptorView m_tetKeysUAV;
     Gradient::GraphicsMemoryManager::DescriptorView m_tetIndicesUAV;
 
@@ -148,6 +153,9 @@ private:
 
     Gradient::RootSignature m_keyWritingRS;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_keyWritingPSO;
+
+    Gradient::RootSignature m_simulationRS;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_simulationPSO;
 
 
     DirectX::XMFLOAT3 m_guiAlbedo = { 0.8, 0.08, 0.08 };

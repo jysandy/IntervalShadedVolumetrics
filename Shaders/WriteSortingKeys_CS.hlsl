@@ -1,5 +1,6 @@
 #include "TetrahedronPipeline.hlsli"
 
+StructuredBuffer<InstanceData> Instances : register(t0, space0);
 RWStructuredBuffer<float> g_outKeys : register(u0, space0);
 RWStructuredBuffer<uint> g_outIndices : register(u1, space0);
 

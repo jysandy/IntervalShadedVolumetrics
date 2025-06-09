@@ -147,7 +147,11 @@ void Game::WriteSortingKeys(ID3D12GraphicsCommandList6* cl,
     m_keyWritingRS.SetUAV(cl, 0, 0, m_tetKeysUAV);
     m_keyWritingRS.SetUAV(cl, 1, 0, m_tetIndicesUAV);
 
-    cl->Dispatch(bm->GetInstanceBuffer(m_tetInstances)->InstanceCount, 1, 1);
+    cl->Dispatch(
+        Gradient::Math::DivRoundUp(
+            bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
+            32u),
+        1, 1);
 }
 
 void Game::DispatchParallelSort(ID3D12GraphicsCommandList6* cl,

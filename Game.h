@@ -33,7 +33,6 @@ class Game final : public DX::IDeviceNotify
 public:
     struct __declspec(align(16)) Constants
     {
-        DirectX::XMMATRIX World;
         DirectX::XMMATRIX View;
         DirectX::XMMATRIX Proj;
         DirectX::XMMATRIX InverseViewProj;

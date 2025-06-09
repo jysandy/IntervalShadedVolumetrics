@@ -3,7 +3,6 @@
 
 cbuffer Constants : register(b0, space0)
 {
-    float4x4 world;
     float4x4 view;
     float4x4 persp;
     float4x4 g_InverseViewProj;

@@ -311,7 +311,6 @@ void Game::Render()
     lightDirection.Normalize();
 
     Constants constants;
-    constants.World = m_world.Transpose();
 
     auto view = m_camera.GetCamera().GetViewMatrix() * Matrix::CreateScale({ -1, -1, -1 });
     auto proj = m_camera.GetCamera().GetProjectionMatrix();

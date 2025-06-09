@@ -13,5 +13,5 @@ void WriteSortingKeys_CS( uint3 DTid : SV_DispatchThreadID )
     // Works as long as the camera is looking down +ve Z
     // FFX seems to ignore the sign of floats, so we have to subtract 
     // from a large number to sort in the right order
-    g_outKeys[DTid.x] = 10000 - viewPosition.z;
+    g_outKeys[DTid.x] = 10000 - dot(viewPosition, viewPosition);
 }

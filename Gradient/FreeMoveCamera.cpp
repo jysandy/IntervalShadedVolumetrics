@@ -10,14 +10,12 @@ using namespace DirectX::SimpleMath;
 
 namespace Gradient
 {
-    void FreeMoveCamera::Update(DX::StepTimer const& timer)
+    void FreeMoveCamera::Update(DX::StepTimer const& timer, const DirectX::Mouse::State& mouseState)
     {
         if (!m_isActive) return;
 
         const float elapsedSeconds = timer.GetElapsedSeconds();
         const float sensitivity = 0.001f;
-
-        auto mouseState = DirectX::Mouse::Get().GetState();
 
         if (mouseState.positionMode == DirectX::Mouse::MODE_RELATIVE)
         {

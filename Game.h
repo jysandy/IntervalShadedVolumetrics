@@ -52,8 +52,12 @@ public:
         float TotalTime;
         float NumInstances;
         float DeltaTime;
+        float DidShoot = 0;
 
-        float Pad = 0;
+        DirectX::XMFLOAT3 ShootRayStart = { 0, 0, 0 };
+        float Pad1;
+        DirectX::XMFLOAT3 ShootRayEnd = { 1, 1, 1 };
+        float Pad2;
     };
 
     struct __declspec(align(16)) InstanceData
@@ -133,6 +137,7 @@ private:
 
     std::unique_ptr<DirectX::Keyboard> m_keyboard;
     std::unique_ptr<DirectX::Mouse> m_mouse;
+    DirectX::Mouse::ButtonStateTracker m_mouseButtonTracker;
     Gradient::FreeMoveCamera m_camera;
     std::unique_ptr<DirectX::CommonStates> m_states;
 
@@ -170,6 +175,11 @@ private:
     float m_guiScatteringAsymmetry = 0.75f;
 
     DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 0, 0 };
+
+    // Bullet shooting state
+    bool m_didShoot = false;
+    DirectX::SimpleMath::Vector3 m_bulletRayStart;
+    DirectX::SimpleMath::Vector3 m_bulletRayEnd;
 
     // FFX stuff
 

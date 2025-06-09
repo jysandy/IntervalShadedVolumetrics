@@ -118,7 +118,37 @@ void Game::Update(DX::StepTimer const& timer)
 {
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
 
-    m_camera.Update(timer);
+    auto mouseState = DirectX::Mouse::Get().GetState();
+    m_mouseButtonTracker.Update(mouseState);
+
+    m_camera.Update(timer, mouseState);
+
+    if (mouseState.positionMode == DirectX::Mouse::MODE_ABSOLUTE
+        && m_mouseButtonTracker.leftButton == DirectX::Mouse::ButtonStateTracker::HELD)
+    {
+        auto size = m_deviceResources->GetOutputSize();
+        Vector2 mousePosition = { (float)mouseState.x / size.right, 
+            (float)mouseState.y / size.bottom };
+        mousePosition = mousePosition * 2 - Vector2(1, 1);
+        mousePosition.y *= -1;
+
+        auto view = m_camera.GetCamera().GetViewMatrix();
+        auto proj = m_camera.GetCamera().GetProjectionMatrix();
+
+        auto unproject = (view * proj).Invert();
+
+        Vector3 rayStart = { mousePosition.x, mousePosition.y, 0 };
+        Vector3 rayEnd = { mousePosition.x, mousePosition.y, 1 };
+
+        m_bulletRayStart = Vector3::Transform(rayStart, unproject);
+        m_bulletRayEnd = Vector3::Transform(rayEnd, unproject);
+        m_didShoot = true;
+    }
+    else
+    {
+        m_didShoot = false;
+    }
+
 
     auto time = static_cast<float>(timer.GetTotalSeconds());
 
@@ -357,6 +387,20 @@ void Game::Render()
     auto instances = bm->GetInstanceBuffer(m_tetInstances);
     auto instanceCount = instances->InstanceCount;
     constants.NumInstances = instanceCount;
+
+    if (m_didShoot)
+    {
+        constants.DidShoot = 1;
+        constants.ShootRayStart = m_bulletRayStart;
+        constants.ShootRayEnd = m_bulletRayEnd;
+    }
+    else
+    {
+        constants.DidShoot = 0;
+    }
+
+    m_didShoot = 0;
+
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Simulate particles");
 

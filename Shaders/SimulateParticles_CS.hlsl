@@ -2,6 +2,14 @@
 
 RWStructuredBuffer<InstanceData> Instances : register(u0, space0);
 
+float3 LineToPoint(float3 lineStart, float3 lineDirection, float3 p)
+{
+    float3 lineProjection = dot(lineStart - p, lineDirection) * lineDirection;
+
+    float3 pointToLine = lineStart - p - lineProjection;
+    return -pointToLine;
+}
+
 [numthreads(32, 1, 1)]
 void SimulateParticles_CS(uint3 DTid : SV_DispatchThreadID)
 {
@@ -19,6 +27,15 @@ void SimulateParticles_CS(uint3 DTid : SV_DispatchThreadID)
     float3 acceleration 
         = attractionAcceleration + (dampingForce / Instances[DTid.x].Mass);
     
-    Instances[DTid.x].Velocity += acceleration * g_DeltaTime;
+    float3 l2p = LineToPoint(g_ShootRayStart,
+        normalize(g_ShootRayEnd - g_ShootRayStart),
+        worldPosition);
+    
+    float lineDistance = length(l2p);
+    
+    float3 bulletScatterVelocity 
+        = g_DidShoot * 0.5 * normalize(l2p) / pow(lineDistance, 2);
+    
+    Instances[DTid.x].Velocity += acceleration * g_DeltaTime + bulletScatterVelocity;
     Instances[DTid.x].WorldPosition += Instances[DTid.x].Velocity * g_DeltaTime;
 }

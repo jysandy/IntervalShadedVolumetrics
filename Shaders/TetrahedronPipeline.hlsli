@@ -25,6 +25,12 @@ cbuffer Constants : register(b0, space0)
     float g_totalTime;
     float g_NumInstances;
     float g_DeltaTime;
+    float g_DidShoot;
+    
+    float3 g_ShootRayStart;
+    float g_pad1;
+    float3 g_ShootRayEnd;
+    float g_pad2;
 };
 
 struct InstanceData

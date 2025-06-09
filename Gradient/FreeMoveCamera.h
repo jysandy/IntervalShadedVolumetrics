@@ -12,7 +12,7 @@ namespace Gradient
     {
     public:
 
-        void Update(DX::StepTimer const& timer);
+        void Update(DX::StepTimer const& timer, const DirectX::Mouse::State& mouseState);
         void SetPosition(DirectX::SimpleMath::Vector3 const&);
         void SetAspectRatio(const float& aspectRatio);
         const Camera& GetCamera() const;

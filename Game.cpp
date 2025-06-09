@@ -724,8 +724,12 @@ void Game::CreateTetrahedronInstances()
 
         instances.push_back(
             {
+            position + 2.f * rotationAxis,
+            densityMultiplier,
+            Vector3::Zero,
+            0,
             position,
-            densityMultiplier ,
+            0,
             Quaternion::CreateFromAxisAngle(rotationAxis, angle)
             });
     }

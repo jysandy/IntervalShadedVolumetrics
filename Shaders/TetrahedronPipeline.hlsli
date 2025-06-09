@@ -30,6 +30,10 @@ struct InstanceData
 {
     float3 WorldPosition;
     float AbsorptionScale;
+    float3 Velocity;
+    float Pad;
+    float3 TargetPosition;
+    float Pad2;
     Quaternion RotationQuat;
 };
 

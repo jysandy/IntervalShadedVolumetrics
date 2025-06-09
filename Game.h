@@ -57,9 +57,12 @@ public:
 
     struct __declspec(align(16)) InstanceData
     {
-        // Not supporting scale to save space
         DirectX::XMFLOAT3 Position;
         float AbsorptionScale;
+        DirectX::XMFLOAT3 Velocity;
+        float Pad;
+        DirectX::XMFLOAT3 TargetPosition;
+        float Pad2;
         DirectX::XMFLOAT4 RotationQuat;
     };
 

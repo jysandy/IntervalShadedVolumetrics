@@ -374,7 +374,8 @@ void Game::Render()
     constants.View = view.Transpose();
     constants.Proj = proj.Transpose();
     constants.InverseViewProj = (view * proj).Invert().Transpose();
-    constants.NearPlane = 0.1f;
+    constants.NearPlane = m_camera.GetCamera().NearPlane;
+    constants.FarPlane = m_camera.GetCamera().FarPlane;
     constants.Albedo = m_guiAlbedo;
     constants.Extinction = m_guiExtinction;
     constants.CameraPosition = m_camera.GetCamera().GetPosition();

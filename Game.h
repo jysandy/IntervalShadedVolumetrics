@@ -55,7 +55,7 @@ public:
         float DidShoot = 0;
 
         DirectX::XMFLOAT3 ShootRayStart = { 0, 0, 0 };
-        float Pad1;
+        float FarPlane;
         DirectX::XMFLOAT3 ShootRayEnd = { 1, 1, 1 };
         float Pad2;
     };

@@ -35,6 +35,9 @@ namespace Gradient
             CreateProjectionMatrix();
         }
 
+        const float NearPlane = 0.1f;
+        const float FarPlane = 130.f;
+
         virtual ~Camera() {}
 
         DirectX::SimpleMath::Matrix GetViewMatrix() const;

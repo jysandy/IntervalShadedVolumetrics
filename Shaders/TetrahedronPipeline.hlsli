@@ -28,7 +28,7 @@ cbuffer Constants : register(b0, space0)
     float g_DidShoot;
     
     float3 g_ShootRayStart;
-    float g_pad1;
+    float g_FarPlane;
     float3 g_ShootRayEnd;
     float g_pad2;
 };

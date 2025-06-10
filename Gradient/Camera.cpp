@@ -28,8 +28,8 @@ namespace Gradient
         m_projectionMatrix = DirectX::SimpleMath::Matrix::CreatePerspectiveFieldOfView(
             m_fieldOfViewRadians,
             m_aspectRatio,
-            0.1f,
-            300.f
+            NearPlane,
+            FarPlane
         );
 
         // A shorter view distance is used for shadows.

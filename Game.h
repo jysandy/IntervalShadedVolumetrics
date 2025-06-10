@@ -40,7 +40,7 @@ public:
         float NearPlane;
         DirectX::XMFLOAT3 Albedo;
 
-        float Absorption;
+        float Extinction;
         DirectX::XMFLOAT3 CameraPosition;
 
         float LightBrightness;
@@ -166,7 +166,7 @@ private:
 
 
     DirectX::XMFLOAT3 m_guiAlbedo = { 0.8, 0.08, 0.08 };
-    float m_guiAbsorption = 1.2f;
+    float m_guiExtinction = 1.2f;
 
     DirectX::XMFLOAT3 m_guiLightDirection = { 0, -0.2, 1 };
     float m_guiLightBrightness = 2.f;

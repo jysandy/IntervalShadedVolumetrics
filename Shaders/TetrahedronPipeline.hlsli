@@ -13,7 +13,7 @@ cbuffer Constants : register(b0, space0)
     float nearplane;
     float3 g_Albedo;
     
-    float g_Absorption;
+    float g_Extinction;
     float3 g_CameraPosition;
     
     float g_LightBrightness;
@@ -36,7 +36,7 @@ cbuffer Constants : register(b0, space0)
 struct InstanceData
 {
     float3 WorldPosition;
-    float AbsorptionScale;
+    float ExtinctionScale;
     float3 Velocity;
     float Mass;
     float3 TargetPosition;
@@ -53,7 +53,7 @@ struct VertexType
     // TODO: Rename this to something reasonable
     float4 A : POSITION1;
     
-    float AbsorptionScale : ABSORPTION;
+    float ExtinctionScale : EXTINCTION;
 };
 
 #endif

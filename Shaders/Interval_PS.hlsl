@@ -10,9 +10,9 @@ struct BlendOutput
 
 static const float PI = 3.14159265359;
 
-float3 ViewTransmittance(float3 absorption, float opticalDepth)
+float3 ViewTransmittance(float3 extinction, float opticalDepth)
 {
-    return exp(-absorption * opticalDepth);
+    return exp(-extinction * opticalDepth);
 }
 
 // The Henyey-Greenstein phase function
@@ -29,7 +29,9 @@ float HGPhase(float3 L, float3 V, float asymmetry)
 
 static const float EPSILON = 0.0001;
 
-float3 ScatteredLight(float3 absorption, 
+float3 ScatteredLight(
+    float extinction,
+    float3 albedo, 
     float opticalDepth, 
     float3 irradiance,
     float3 L,
@@ -38,38 +40,28 @@ float3 ScatteredLight(float3 absorption,
 {
     float phase = HGPhase(L, V, asymmetry);
     
-    float3 transmissionFactor = (1.xxx - exp(-absorption * opticalDepth)) / absorption;
+    float transmissionFactor = (1 - exp(-extinction * opticalDepth)) / extinction;
 
-    if (absorption.x < EPSILON)
-        transmissionFactor.x = opticalDepth;
+    if (extinction < EPSILON)
+        transmissionFactor = opticalDepth;
 
-    if (absorption.y < EPSILON)
-        transmissionFactor.y = opticalDepth;
-
-    if (absorption.z < EPSILON)
-        transmissionFactor.z = opticalDepth;
-    
-    return phase * irradiance * transmissionFactor;
+    return albedo * phase * irradiance * transmissionFactor;
 }
 
-float3 AmbientLight(float3 absorption,
+float3 AmbientLight(
+    float extinction,
+    float3 albedo,
     float opticalDepth,
     float3 irradiance)
 {
     float phase = 1.f / (4 * PI);
     
-    float3 transmissionFactor = (1.xxx - exp(-absorption * opticalDepth)) / absorption;
+    float transmissionFactor = (1 - exp(-extinction * opticalDepth)) / extinction;
 
-    if (absorption.x < EPSILON)
-        transmissionFactor.x = opticalDepth;
+    if (extinction < EPSILON)
+        transmissionFactor = opticalDepth;
 
-    if (absorption.y < EPSILON)
-        transmissionFactor.y = opticalDepth;
-
-    if (absorption.z < EPSILON)
-        transmissionFactor.z = opticalDepth;
-    
-    return phase * irradiance * transmissionFactor;
+    return albedo * phase * irradiance * transmissionFactor;
 }
 
 BlendOutput Interval_PS(VertexType input)
@@ -90,18 +82,18 @@ BlendOutput Interval_PS(VertexType input)
     reprojected /= reprojected.w;
     ret.Depth = reprojected.z;
     
-    float3 absorption = input.AbsorptionScale * g_Absorption * (1.xxx - g_Albedo) * 0.01f;
+    float extinction = input.ExtinctionScale * g_Extinction / 100.f;
+    
     float opticalDepth = length(b - a);
 
-    ret.Tv = float4(ViewTransmittance(absorption, opticalDepth), 1);
+    ret.Tv = float4(ViewTransmittance(extinction.xxx, opticalDepth), 1);
 
     float3 V = normalize(g_CameraPosition - a.xyz);
     float3 L = normalize(-g_LightDirection);
-    float3 R = g_LightBrightness * g_LightColor * 0.005;
+    float3 R = g_LightBrightness * g_LightColor * 0.01;
     float3 cscat 
-        = 0.60 * ScatteredLight(absorption, opticalDepth, R, L, V, g_ScatteringAsymmetry)
-            + 0.40 * AmbientLight(absorption, opticalDepth, R)
-    ;
+        = 0.60 * ScatteredLight(extinction, g_Albedo, opticalDepth, R, L, V, g_ScatteringAsymmetry)
+            + 0.40 * AmbientLight(extinction, g_Albedo, opticalDepth, R);
 
     ret.CScat = float4(cscat, 1);
     

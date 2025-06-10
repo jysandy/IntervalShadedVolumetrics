@@ -30,7 +30,7 @@ float HGPhase(float3 L, float3 V, float asymmetry)
 static const float EPSILON = 0.0001;
 
 float3 ScatteredLight(
-    float extinction,
+    float3 extinction,
     float3 albedo, 
     float opticalDepth, 
     float3 irradiance,
@@ -40,26 +40,38 @@ float3 ScatteredLight(
 {
     float phase = HGPhase(L, V, asymmetry);
     
-    float transmissionFactor = (1 - exp(-extinction * opticalDepth)) / extinction;
+    float3 transmissionFactor = (1.xxx - exp(-extinction * opticalDepth)) / extinction;
 
-    if (extinction < EPSILON)
-        transmissionFactor = opticalDepth;
+    if (extinction.x < EPSILON)
+        transmissionFactor.x = opticalDepth;
+    
+    if (extinction.y < EPSILON)
+        transmissionFactor.y = opticalDepth;
+    
+    if (extinction.z < EPSILON)
+        transmissionFactor.z = opticalDepth;
 
     return albedo * phase * irradiance * transmissionFactor;
 }
 
 float3 AmbientLight(
-    float extinction,
+    float3 extinction,
     float3 albedo,
     float opticalDepth,
     float3 irradiance)
 {
     float phase = 1.f / (4 * PI);
     
-    float transmissionFactor = (1 - exp(-extinction * opticalDepth)) / extinction;
+    float3 transmissionFactor = (1 - exp(-extinction * opticalDepth)) / extinction;
 
-    if (extinction < EPSILON)
-        transmissionFactor = opticalDepth;
+    if (extinction.x < EPSILON)
+        transmissionFactor.x = opticalDepth;
+    
+    if (extinction.y < EPSILON)
+        transmissionFactor.y = opticalDepth;
+    
+    if (extinction.z < EPSILON)
+        transmissionFactor.z = opticalDepth;
 
     return albedo * phase * irradiance * transmissionFactor;
 }
@@ -82,7 +94,7 @@ BlendOutput Interval_PS(VertexType input)
     reprojected /= reprojected.w;
     ret.Depth = reprojected.z;
     
-    float extinction = input.ExtinctionScale * g_Extinction / 100.f;
+    float3 extinction = g_Albedo * input.ExtinctionScale * g_Extinction / 100.f;
     
     float opticalDepth = length(b - a);
 

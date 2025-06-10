@@ -3,6 +3,7 @@
 
 #include "TetrahedronPipeline.hlsli"
 #include "Quaternion.hlsli"
+#include "Culling.hlsli"
 
 StructuredBuffer<InstanceData> Instances : register(t0, space0);
 StructuredBuffer<uint> Indices : register(t1, space0);
@@ -12,6 +13,7 @@ InstanceData GetInstanceData(uint index)
     return Instances[Indices[index]];
 }
 
+// Tetrahedron whose vertices are on the unit sphere
 /*
 	std::vector<vec4f> vertices;
 	vertices.push_back(vec4f({sqrtf(8.0f/9.0f), 0.0f, -1.0f/3.0f,1.0}));
@@ -165,131 +167,131 @@ void Tetrahedron_MS(
     {
         tetIndices_t indices = tet[0];
 
-        float4x4 scale = float4x4(
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        );
-        
         InstanceData instanceData = GetInstanceData(instanceIndex);
-        
         float3 worldPosition = instanceData.WorldPosition;
-        float4x4 rotation = QuatTo4x4(instanceData.RotationQuat);
-        float4x4 model = mul(scale, rotation);
-        model._41_42_43 = worldPosition;
-        float4x4 modelView = mul(model, view);
-        
-        tet_t tet;
-        tet.pos[0] = mul(coords[indices.index[0]], modelView);
-        tet.pos[1] = mul(coords[indices.index[1]], modelView);
-        tet.pos[2] = mul(coords[indices.index[2]], modelView);
-        tet.pos[3] = mul(coords[indices.index[3]], modelView);
 
-        //clip test
-        float bias = nearplane * 0.1;
+        const float scaleFactor = 1.f;
         
-        if (
+        BoundingSphere bs;
+        bs.xyz = worldPosition;
+        bs.w = scaleFactor;
+        
+        visible = IsVisible(bs, g_CullingFrustumPlanes);
+        
+        if (visible)
+        {
+            float4x4 scale = float4x4(
+                                scaleFactor, 0, 0, 0,
+                                0, scaleFactor, 0, 0,
+                                0, 0, scaleFactor, 0,
+                                0, 0, 0, 1
+                            );
+        
+            float4x4 rotation = QuatTo4x4(instanceData.RotationQuat);
+            float4x4 model = mul(scale, rotation);
+            model._41_42_43 = worldPosition;
+            float4x4 modelView = mul(model, view);
+        
+            tet_t tet;
+            tet.pos[0] = mul(coords[indices.index[0]], modelView);
+            tet.pos[1] = mul(coords[indices.index[1]], modelView);
+            tet.pos[2] = mul(coords[indices.index[2]], modelView);
+            tet.pos[3] = mul(coords[indices.index[3]], modelView);
+
+            //clip test
+            float bias = nearplane * 0.1;
+        
+            if (
             tet.pos[0].z < nearplane + bias
             || tet.pos[1].z < nearplane + bias
             || tet.pos[2].z < nearplane + bias
             || tet.pos[3].z < nearplane + bias
             )
-        {
-            visible = false;
-        }
-        
-        if (
-            tet.pos[0].z > g_FarPlane - bias
-            || tet.pos[1].z > g_FarPlane - bias
-            || tet.pos[2].z > g_FarPlane - bias
-            || tet.pos[3].z > g_FarPlane - bias
-            )
-        {
-            visible = false;
-        }
-        
-        
-        if (visible)
-        {
-            //project all point
-            for (int j = 0; j < 4; j++)
             {
-                tet.pos[j] = mul(tet.pos[j], persp);
-                tet.pos[j] = tet.pos[j] / tet.pos[j].w;
+                visible = false;
             }
-            
-            int nb_triangle = 0;
-
-
-            // First test projection : 
-            for (int j = 0; j < potentialProjection; j++)
+        
+            if (visible)
             {
-                float4 p = tet.pos[potential_projection[j][0]];
-                
-                
-                uint faceID = potential_projection[j][1];
-                float4 a = tet.pos[faces[faceID][0]];
-                float4 b = tet.pos[faces[faceID][1]];
-                float4 c = tet.pos[faces[faceID][2]];
-
-                float2 v0 = b.xy - a.xy;
-                float2 v1 = c.xy - b.xy;
-                float2 v2 = a.xy - c.xy;
-
-                float s0 = cross2D(p.xy - a.xy, v0);
-                float s1 = cross2D(p.xy - b.xy, v1);
-                float s2 = cross2D(p.xy - c.xy, v2);
-
-                bool isInside = (s0 >= 0 && s1 >= 0 && s2 >= 0) || (s0 <= 0 && s1 <= 0 && s2 <= 0);
-                //inside with borders
-                if (isInside)
+                //project all point
+                for (int j = 0; j < 4; j++)
                 {
-
-                    float s = s0 + s1 + s2;
-                    float lambda0 = s1 / s;
-                    float lambda1 = s2 / s;
-                    float lambda2 = s0 / s;
-
-                    float z_ = (lambda0 * a.z + lambda1 * b.z + lambda2 * c.z);
-
-                    nb_triangle = 3;
-
-                    proxy.pos[0] = a.xyzz;
-                    proxy.pos[1] = b.xyzz;
-                    proxy.pos[2] = c.xyzz;
-                    
-                    proxy.pos[3] = p.z < z_ ? float4(p.xyz, z_) : float4(p.xy, z_, p.z);
-                    proxy.point_count = 4;
+                    tet.pos[j] = mul(tet.pos[j], persp);
+                    tet.pos[j] = tet.pos[j] / tet.pos[j].w;
                 }
-            }
+            
+                int nb_triangle = 0;
 
-            if (nb_triangle == 0)
-            {
-                for (int j = 0; j < potentialCrossing; j++)
+
+                // First test projection : 
+                for (int j = 0; j < potentialProjection; j++)
                 {
-                    float4 l0a = tet.pos[edges[potential_intersection[j][0]][0]];
-                    float4 l0b = tet.pos[edges[potential_intersection[j][0]][1]];
-                    float4 l1a = tet.pos[edges[potential_intersection[j][1]][0]];
-                    float4 l1b = tet.pos[edges[potential_intersection[j][1]][1]];
+                    float4 p = tet.pos[potential_projection[j][0]];
+                
+                
+                    uint faceID = potential_projection[j][1];
+                    float4 a = tet.pos[faces[faceID][0]];
+                    float4 b = tet.pos[faces[faceID][1]];
+                    float4 c = tet.pos[faces[faceID][2]];
 
-                    float2 p;
-                    float2 t;
-                    if (lineIntersection(l0a.xy, l0b.xy, l1a.xy, l1b.xy, p, t))
+                    float2 v0 = b.xy - a.xy;
+                    float2 v1 = c.xy - b.xy;
+                    float2 v2 = a.xy - c.xy;
+
+                    float s0 = cross2D(p.xy - a.xy, v0);
+                    float s1 = cross2D(p.xy - b.xy, v1);
+                    float s2 = cross2D(p.xy - c.xy, v2);
+
+                    bool isInside = (s0 >= 0 && s1 >= 0 && s2 >= 0) || (s0 <= 0 && s1 <= 0 && s2 <= 0);
+                    //inside with borders
+                    if (isInside)
                     {
 
+                        float s = s0 + s1 + s2;
+                        float lambda0 = s1 / s;
+                        float lambda1 = s2 / s;
+                        float lambda2 = s0 / s;
+
+                        float z_ = (lambda0 * a.z + lambda1 * b.z + lambda2 * c.z);
+
+                        nb_triangle = 3;
+
+                        proxy.pos[0] = a.xyzz;
+                        proxy.pos[1] = b.xyzz;
+                        proxy.pos[2] = c.xyzz;
                     
-                        float z0 = (l0a.z) * (1.0 - t[0]) + (l0b.z) * t[0];
-                        float z1 = (l1a.z) * (1.0 - t[1]) + (l1b.z) * t[1];
+                        proxy.pos[3] = p.z < z_ ? float4(p.xyz, z_) : float4(p.xy, z_, p.z);
+                        proxy.point_count = 4;
+                    }
+                }
+
+                if (nb_triangle == 0)
+                {
+                    for (int j = 0; j < potentialCrossing; j++)
+                    {
+                        float4 l0a = tet.pos[edges[potential_intersection[j][0]][0]];
+                        float4 l0b = tet.pos[edges[potential_intersection[j][0]][1]];
+                        float4 l1a = tet.pos[edges[potential_intersection[j][1]][0]];
+                        float4 l1b = tet.pos[edges[potential_intersection[j][1]][1]];
+
+                        float2 p;
+                        float2 t;
+                        if (lineIntersection(l0a.xy, l0b.xy, l1a.xy, l1b.xy, p, t))
+                        {
+
+                    
+                            float z0 = (l0a.z) * (1.0 - t[0]) + (l0b.z) * t[0];
+                            float z1 = (l1a.z) * (1.0 - t[1]) + (l1b.z) * t[1];
 
 
-                        proxy.pos[0] = l0a.xyzz;
-                        proxy.pos[1] = l1a.xyzz;
-                        proxy.pos[2] = l0b.xyzz;
-                        proxy.pos[3] = l1b.xyzz;
-                        proxy.pos[4] = z0 < z1 ? float4(p.xy, z0, z1) : float4(p.xy, z1, z0);
-                        proxy.point_count = 5;
-                        nb_triangle = 4;
+                            proxy.pos[0] = l0a.xyzz;
+                            proxy.pos[1] = l1a.xyzz;
+                            proxy.pos[2] = l0b.xyzz;
+                            proxy.pos[3] = l1b.xyzz;
+                            proxy.pos[4] = z0 < z1 ? float4(p.xy, z0, z1) : float4(p.xy, z1, z0);
+                            proxy.point_count = 5;
+                            nb_triangle = 4;
+                        }
                     }
                 }
             }
@@ -326,7 +328,7 @@ void Tetrahedron_MS(
                         numTrisEmitted);
 
     if (visible)
-    {    
+    {
         uint prefixVertices = WavePrefixSum(vertex_counter);
         uint prefixTris = WavePrefixSum(triangle_counter);
 

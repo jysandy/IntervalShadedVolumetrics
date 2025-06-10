@@ -37,6 +37,7 @@ public:
         DirectX::XMMATRIX View;
         DirectX::XMMATRIX Proj;
         DirectX::XMMATRIX InverseViewProj;
+        DirectX::XMFLOAT4 CullingFrustumPlanes[6];
         float NearPlane;
         DirectX::XMFLOAT3 Albedo;
 

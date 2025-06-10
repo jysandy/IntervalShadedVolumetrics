@@ -370,10 +370,19 @@ void Game::Render()
     auto view = m_camera.GetCamera().GetViewMatrix() * Matrix::CreateScale({ -1, -1, -1 });
     auto proj = m_camera.GetCamera().GetProjectionMatrix();
 
+    auto cullingPlanes 
+        = Gradient::Math::GetPlanes(m_camera.GetCamera().GetFrustum());
+
     constants.TargetWorld = Matrix::CreateTranslation(m_guiTargetWorld).Transpose();
     constants.View = view.Transpose();
     constants.Proj = proj.Transpose();
     constants.InverseViewProj = (view * proj).Invert().Transpose();
+
+    for (int i = 0; i < 6; i++)
+    {
+        constants.CullingFrustumPlanes[i] = cullingPlanes[i];
+    }
+
     constants.NearPlane = m_camera.GetCamera().NearPlane;
     constants.FarPlane = m_camera.GetCamera().FarPlane;
     constants.Albedo = m_guiAlbedo;

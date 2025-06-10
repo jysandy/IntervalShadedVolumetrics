@@ -611,6 +611,7 @@ void Game::CreateDeviceDependentResources()
         ToneMapPostProcess::None,
         ToneMapPostProcess::ST2084);
 
+    m_tonemapperHDR10->SetST2084Parameter(450);
     // Initialize ImGUI
 
     ImGui_ImplDX12_InitInfo initInfo = {};
@@ -756,7 +757,7 @@ void Game::CreateTetrahedronInstances()
     // Create instances
 
     std::vector<InstanceData> instances;
-    for (int i = 0; i < 5000; i++)
+    for (int i = 0; i < 50000; i++)
     {
         Vector3 position;
         position.x = RandomFloat() * 10.f - 5.f;

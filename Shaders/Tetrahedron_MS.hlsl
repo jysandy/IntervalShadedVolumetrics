@@ -339,9 +339,9 @@ void Tetrahedron_MS(
         tetIndices_t indices = tet[0];
 
         float4x4 scale = float4x4(
-            2, 0, 0, 0,
-            0, 2, 0, 0,
-            0, 0, 2, 0,
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
             0, 0, 0, 1
         );
         

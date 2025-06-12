@@ -672,7 +672,7 @@ void Game::CreateDeviceDependentResources()
 
     m_states = std::make_unique<DirectX::CommonStates>(device);
 
-    m_volShadowMap = std::make_unique<ISV::VolShadowMap>(device, 15.f);
+    m_volShadowMap = std::make_unique<ISV::VolShadowMap>(device, 30.f);
 
     RenderTargetState backBufferRTState(m_deviceResources->GetBackBufferFormat(),
         m_deviceResources->GetDepthBufferFormat());

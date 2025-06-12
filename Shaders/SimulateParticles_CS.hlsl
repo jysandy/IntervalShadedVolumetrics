@@ -17,9 +17,16 @@ void SimulateParticles_CS(uint3 DTid : SV_DispatchThreadID)
     float3 targetPosition = mul(float4(Instances[DTid.x].TargetPosition, 1), g_TargetWorld)
         .xyz;
     
+    float3 velocityDirection = targetPosition - worldPosition;
+    
     // Like gravity, this is independent of mass
     float3 attractionAcceleration = 50.f * 
         normalize(targetPosition - worldPosition);
+    
+    if (length(velocityDirection) == 0)
+    {
+        attractionAcceleration = 0.xxx;
+    }
     
     // This is not independent of mass
     float3 dampingForce = -0.4f * Instances[DTid.x].Velocity;

@@ -308,6 +308,7 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Core\VolShadowMap.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Gradient\BarrierResource.h" />
     <ClInclude Include="Gradient\BufferManager.h" />
@@ -330,6 +331,7 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     <ClInclude Include="DeviceResources.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Core\VolShadowMap.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Gradient\BarrierResource.cpp" />
     <ClCompile Include="Gradient\BufferManager.cpp" />
@@ -396,6 +398,12 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Tetrahedron_MS</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Tetrahedron_MS</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='GpuTrace|x64'">Tetrahedron_MS</EntryPointName>
+    </FxCompile>
+    <FxCompile Include="Shaders\VolShadowMap_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VolShadowMap_PS</EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VolShadowMap_PS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="Shaders\WriteSortingKeys_CS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>

@@ -55,7 +55,8 @@ Game::Game() noexcept(false)
         DXGI_FORMAT_D32_FLOAT,
         2,
         D3D_FEATURE_LEVEL_12_2,
-        DX::DeviceResources::c_AllowTearing | DX::DeviceResources::c_EnableHDR
+        DX::DeviceResources::c_AllowTearing
+        | DX::DeviceResources::c_EnableHDR
     );
     // TODO: Provide parameters for swapchain format, depth/stencil format, and backbuffer count.
     //   Add DX::DeviceResources::c_AllowTearing to opt-in to variable rate displays.
@@ -127,7 +128,7 @@ void Game::Update(DX::StepTimer const& timer)
         && m_mouseButtonTracker.leftButton == DirectX::Mouse::ButtonStateTracker::HELD)
     {
         auto size = m_deviceResources->GetOutputSize();
-        Vector2 mousePosition = { (float)mouseState.x / size.right, 
+        Vector2 mousePosition = { (float)mouseState.x / size.right,
             (float)mouseState.y / size.bottom };
         mousePosition = mousePosition * 2 - Vector2(1, 1);
         mousePosition.y *= -1;
@@ -250,18 +251,69 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
 {
     auto bm = Gradient::BufferManager::Get();
 
+    bm->GetInstanceBuffer(m_tetInstances)->Resource.Transition(
+        cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(
+        cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+
     m_tetRS.SetOnCommandList(cl);
-    m_tetPSO->Set(cl, true);
+    m_tetPSO->Set(cl, false);
 
     m_tetRS.SetCBV(cl, 0, 0, constants);
     m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
     m_tetRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
+    m_tetRS.SetSRV(cl, 2, 0, m_volShadowMap->TransitionAndGetSRV(cl));
 
     cl->DispatchMesh(
         Gradient::Math::DivRoundUp(
             bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
             32),
         1, 1);
+}
+
+void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
+    const Constants& constants)
+{
+    auto bm = Gradient::BufferManager::Get();
+
+    m_tetRS.SetOnCommandList(cl);
+    m_shadowPSO->Set(cl, true);
+
+    bm->GetInstanceBuffer(m_tetInstances)->Resource.Transition(
+        cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(
+        cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+
+    m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
+    m_tetRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
+
+    m_volShadowMap->SetLightDirection(constants.LightDirection);
+    m_volShadowMap->Render(cl,
+        [constants, &cl, &bm, this](Matrix view, Matrix proj, DirectX::BoundingOrientedBox bb)
+        {
+            auto newConstants = constants;
+
+            auto v = (view * Matrix::CreateScale({ -1, -1, -1 }));
+
+            newConstants.View = v.Transpose();
+            newConstants.Proj = proj.Transpose();
+            newConstants.InverseViewProj = (v * proj).Invert().Transpose();
+            newConstants.NearPlane = 0;
+            auto cullingPlanes
+                = Gradient::Math::GetPlanes(bb);
+            for (int i = 0; i < 6; i++)
+            {
+                newConstants.CullingFrustumPlanes[i] = cullingPlanes[i];
+            }
+
+            m_tetRS.SetCBV(cl, 0, 0, newConstants);
+
+            cl->DispatchMesh(
+                Gradient::Math::DivRoundUp(
+                    bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
+                    32),
+                1, 1);
+        });
 }
 
 void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
@@ -295,6 +347,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::DragFloat3("Direction", &m_guiLightDirection.x, 0.001f, -1.f, 1.f);
         ImGui::SliderFloat("Brightness", &m_guiLightBrightness, 0, 10);
         ImGui::ColorEdit3("Color", &m_guiLightColor.x);
+        ImGui::Checkbox("Debug Volumetric Shadows", &m_guiDebugVolShadows);
 
         ImGui::TreePop();
     }
@@ -346,7 +399,6 @@ void Game::Render()
 
     // Prepare the command list to render a new frame.
     m_deviceResources->Prepare();
-    ClearAndSetHDRTarget();
 
     auto cl = m_deviceResources->GetCommandList();
     auto bm = Gradient::BufferManager::Get();
@@ -370,7 +422,7 @@ void Game::Render()
     auto view = m_camera.GetCamera().GetViewMatrix() * Matrix::CreateScale({ -1, -1, -1 });
     auto proj = m_camera.GetCamera().GetProjectionMatrix();
 
-    auto cullingPlanes 
+    auto cullingPlanes
         = Gradient::Math::GetPlanes(m_camera.GetCamera().GetFrustum());
 
     constants.TargetWorld = Matrix::CreateTranslation(m_guiTargetWorld).Transpose();
@@ -397,6 +449,10 @@ void Game::Render()
     auto instances = bm->GetInstanceBuffer(m_tetInstances);
     auto instanceCount = instances->InstanceCount;
     constants.NumInstances = instanceCount;
+    constants.DebugVolShadows = m_guiDebugVolShadows ? 1 : 0;
+
+    m_volShadowMap->SetLightDirection(constants.LightDirection);
+    constants.ShadowTransform = m_volShadowMap->GetShadowTransform().Transpose();
 
     if (m_didShoot)
     {
@@ -418,6 +474,12 @@ void Game::Render()
 
     PIXEndEvent(cl);
 
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Volumetric shadow rendering");
+
+    RenderVolumetricShadows(cl, constants);
+
+    PIXEndEvent(cl);
+
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Sort particles");
 
     WriteSortingKeys(cl, constants);
@@ -431,6 +493,7 @@ void Game::Render()
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Render");
 
+    ClearAndSetHDRTarget();
     RenderProps(cl, lightDirection);
     RenderParticles(cl, constants);
 
@@ -609,6 +672,8 @@ void Game::CreateDeviceDependentResources()
 
     m_states = std::make_unique<DirectX::CommonStates>(device);
 
+    m_volShadowMap = std::make_unique<ISV::VolShadowMap>(device, 15.f);
+
     RenderTargetState backBufferRTState(m_deviceResources->GetBackBufferFormat(),
         m_deviceResources->GetDepthBufferFormat());
 
@@ -622,6 +687,7 @@ void Game::CreateDeviceDependentResources()
         ToneMapPostProcess::ST2084);
 
     m_tonemapperHDR10->SetST2084Parameter(450);
+
     // Initialize ImGUI
 
     ImGui_ImplDX12_InitInfo initInfo = {};
@@ -656,8 +722,17 @@ void Game::CreateDeviceDependentResources()
 
     // Tetrahedron PSO and root signature
     m_tetRS.AddCBV(0, 0);
-    m_tetRS.AddRootSRV(0, 0); // instances
-    m_tetRS.AddRootSRV(1, 0); // indices
+    m_tetRS.AddRootSRV(0, 0);   // instances
+    m_tetRS.AddRootSRV(1, 0);   // indices
+    m_tetRS.AddSRV(2, 0);       // volumetric shadow map
+
+    m_tetRS.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(0,
+        D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+        D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+        D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+        0, 0);
+
     m_tetRS.Build(device);
 
     D3DX12_MESH_SHADER_PIPELINE_STATE_DESC psoDesc = Gradient::PipelineState::GetDefaultMeshDesc();
@@ -683,6 +758,22 @@ void Game::CreateDeviceDependentResources()
 
     m_tetPSO = std::make_unique<Gradient::PipelineState>(psoDesc);
     m_tetPSO->Build(device);
+
+    // Shadow PSO
+    auto shadowPSData = DX::ReadData(L"VolShadowMap_PS.cso");
+
+    psoDesc.DepthStencilState = DirectX::CommonStates::DepthNone;
+    psoDesc.PS = { shadowPSData.data(), shadowPSData.size() };
+
+    auto shadowBlendState = CD3DX12_BLEND_DESC(CD3DX12_DEFAULT());
+    shadowBlendState.RenderTarget[0].BlendEnable = TRUE;
+    shadowBlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+    shadowBlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+    shadowBlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+    psoDesc.BlendState = shadowBlendState;
+
+    m_shadowPSO = std::make_unique<Gradient::PipelineState>(psoDesc);
+    m_shadowPSO->Build(device);
 
     // Key writing PSO and root signature
     m_keyWritingRS.AddCBV(0, 0); // constants
@@ -767,7 +858,7 @@ void Game::CreateTetrahedronInstances()
     // Create instances
 
     std::vector<InstanceData> instances;
-    for (int i = 0; i < 50000; i++)
+    for (int i = 0; i < 10000; i++)
     {
         Vector3 position;
         position.x = RandomFloat() * 10.f - 5.f;
@@ -775,6 +866,9 @@ void Game::CreateTetrahedronInstances()
         position.z = RandomFloat() * 10.f - 5.f;
 
         float densityMultiplier = std::abs(RandomFloat() * 4.f - 1.f);
+        // Varying densities don't work with the shadow map at the moment.
+        // TODO: Rework the formulas for varying densities
+        densityMultiplier = 1.f;
 
         Vector3 rotationAxis = { RandomFloat(), RandomFloat(), RandomFloat() };
         rotationAxis = rotationAxis * 2.f - Vector3(1.f, 1.f, 1.f);

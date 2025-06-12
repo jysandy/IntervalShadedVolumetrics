@@ -1,5 +1,8 @@
 #include "TetrahedronPipeline.hlsli"
 
+Texture3D<float> VolumetricShadowMap : register(t2, space0);
+
+SamplerState LinearSampler : register(s0, space0);
 
 struct BlendOutput
 {
@@ -29,10 +32,52 @@ float HGPhase(float3 L, float3 V, float asymmetry)
 
 static const float EPSILON = 0.0001;
 
+float SampleOpticalDepth(float3 worldPosition)
+{
+    float4 transformed = mul(float4(worldPosition, 1), g_ShadowTransform);
+    
+    transformed /= transformed.w;
+    float3 uvw = transformed.xyz;
+    
+    uvw.xy = 1 - uvw.xy;    // why is this necessary?
+    
+    // Z should already be linear since the projection is orthographic
+    return VolumetricShadowMap.Sample(LinearSampler, uvw + float3(0, 0, 0));
+}
+
+float3 IntegrateTransmittance(
+    float3 minpoint,
+    float3 maxpoint,
+    float3 extinction
+)
+{
+    float zmin = length(g_CameraPosition - minpoint);
+    float zmax = length(g_CameraPosition - maxpoint);
+    float deltaZ = zmax - zmin;
+    float deltaOl = SampleOpticalDepth(maxpoint) - SampleOpticalDepth(minpoint);
+    float deltaZPlusOl = deltaZ + deltaOl;
+    
+    float3 denominator = extinction * (deltaZPlusOl);
+    
+    float3 a = exp(-extinction * ((zmax * deltaZPlusOl / deltaZ) - zmin));
+    float3 b = exp(-extinction * ((zmin * deltaZPlusOl / deltaZ) - zmin));
+    
+    float3 numerator = deltaZ * (b - a);
+    
+    // TODO: Improve this
+    if (any(denominator == 0))
+    {
+        return deltaZ;
+    }
+
+    return numerator / denominator;
+}
+
 float3 ScatteredLight(
     float3 extinction,
-    float3 albedo, 
-    float opticalDepth, 
+    float3 albedo,
+    float3 minpoint,
+    float3 maxpoint,
     float3 irradiance,
     float3 L,
     float3 V,
@@ -40,46 +85,72 @@ float3 ScatteredLight(
 {
     float phase = HGPhase(L, V, asymmetry);
     
-    float3 transmissionFactor = (1.xxx - exp(-extinction * opticalDepth)) / extinction;
+    float3 transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction);
 
-    if (extinction.x < EPSILON)
-        transmissionFactor.x = opticalDepth;
+    //if (extinction.x < EPSILON)
+    //    transmissionFactor.x = opticalDepth;
     
-    if (extinction.y < EPSILON)
-        transmissionFactor.y = opticalDepth;
+    //if (extinction.y < EPSILON)
+    //    transmissionFactor.y = opticalDepth;
     
-    if (extinction.z < EPSILON)
-        transmissionFactor.z = opticalDepth;
+    //if (extinction.z < EPSILON)
+    //    transmissionFactor.z = opticalDepth;
 
-    return albedo * phase * irradiance * transmissionFactor;
+    float inScatteredPhase = HGPhase(L, L, asymmetry);
+    return albedo * phase 
+        * inScatteredPhase 
+    * irradiance * transmissionFactor;
 }
 
 float3 AmbientLight(
     float3 extinction,
     float3 albedo,
-    float opticalDepth,
+    float3 minpoint,
+    float3 maxpoint,
     float3 irradiance)
 {
     float phase = 1.f / (4 * PI);
     
-    float3 transmissionFactor = (1 - exp(-extinction * opticalDepth)) / extinction;
+    float3 transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction);
 
-    if (extinction.x < EPSILON)
-        transmissionFactor.x = opticalDepth;
+    //if (extinction.x < EPSILON)
+    //    transmissionFactor.x = opticalDepth;
     
-    if (extinction.y < EPSILON)
-        transmissionFactor.y = opticalDepth;
+    //if (extinction.y < EPSILON)
+    //    transmissionFactor.y = opticalDepth;
     
-    if (extinction.z < EPSILON)
-        transmissionFactor.z = opticalDepth;
+    //if (extinction.z < EPSILON)
+    //    transmissionFactor.z = opticalDepth;
 
-    return albedo * phase * irradiance * transmissionFactor;
+    return albedo * phase 
+        * phase 
+    * irradiance * transmissionFactor;
+}
+
+float3 Debug(float3 minpoint, float3 maxpoint)
+{
+    float3 avg = (minpoint + maxpoint) / 2.f;
+    
+    float od = SampleOpticalDepth(avg);
+    
+    if (od < 0)
+    {
+        return float3(0, 0, 1);
+    }
+    
+    float transmittance = exp(-0.2 * od);
+    
+    if (transmittance > 1)
+        return float3(0, 0, 1);
+    
+    //return pow(saturate(transmittance), 10).xxx / 5.f;
+    return pow(transmittance, 1).xxx * 0.1f;
 }
 
 BlendOutput Interval_PS(VertexType input)
 {
-    float4 minpoint = float4(input.A.xy, input.A.z, 1.0);
-    float4 maxpoint = float4(input.A.xy, input.A.w, 1.0);
+    float4 maxpoint = float4(input.A.xy, input.A.z, 1.0);
+    float4 minpoint = float4(input.A.xy, input.A.w, 1.0);
 
     float4 a = mul(minpoint, g_InverseViewProj);
     float4 b = mul(maxpoint, g_InverseViewProj);
@@ -102,11 +173,25 @@ BlendOutput Interval_PS(VertexType input)
 
     float3 V = normalize(g_CameraPosition - a.xyz);
     float3 L = normalize(-g_LightDirection);
-    float3 R = g_LightBrightness * g_LightColor * 0.01;
-    float3 cscat 
-        = 0.60 * ScatteredLight(extinction, g_Albedo, opticalDepth, R, L, V, g_ScatteringAsymmetry)
-            + 0.40 * AmbientLight(extinction, g_Albedo, opticalDepth, R);
+    float3 R = g_LightBrightness * g_LightColor;
+    float3 cscat
+        = 0.80 * ScatteredLight(extinction, 
+                    g_Albedo, 
+                    a.xyz,
+                    b.xyz,
+                    R, L, V, 
+                    g_ScatteringAsymmetry)
+            + 0.20 * AmbientLight(extinction, 
+                        g_Albedo, 
+                        a.xyz, b.xyz, 
+                        R);
 
+    if (g_DebugVolShadows > 0)
+    {
+        cscat = Debug(a.xyz, b.xyz);
+        ret.Tv = 1;
+    }
+    
     ret.CScat = float4(cscat, 1);
     
     return ret;

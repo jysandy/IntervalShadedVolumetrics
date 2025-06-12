@@ -24,6 +24,7 @@
 #include "Gradient/PipelineState.h"
 #include "Gradient/RootSignature.h"
 #include "Gradient/BufferManager.h"
+#include "Core/VolShadowMap.h"
 
 
 // A basic game implementation that creates a D3D12 device and
@@ -37,6 +38,7 @@ public:
         DirectX::XMMATRIX View;
         DirectX::XMMATRIX Proj;
         DirectX::XMMATRIX InverseViewProj;
+        DirectX::XMMATRIX ShadowTransform;
         DirectX::XMFLOAT4 CullingFrustumPlanes[6];
         float NearPlane;
         DirectX::XMFLOAT3 Albedo;
@@ -58,7 +60,7 @@ public:
         DirectX::XMFLOAT3 ShootRayStart = { 0, 0, 0 };
         float FarPlane;
         DirectX::XMFLOAT3 ShootRayEnd = { 1, 1, 1 };
-        float Pad2;
+        float DebugVolShadows = 0;
     };
 
     struct __declspec(align(16)) InstanceData
@@ -126,6 +128,8 @@ private:
         Gradient::BufferManager::InstanceBufferEntry* payload);
     void RenderProps(ID3D12GraphicsCommandList6* cl, 
         DirectX::SimpleMath::Vector3 lightDirection);
+    void RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
+        const Constants& constants);
     void RenderParticles(ID3D12GraphicsCommandList6* cl,
         const Constants& constants);
     void RenderGUI(ID3D12GraphicsCommandList6* cl);
@@ -156,8 +160,13 @@ private:
     Gradient::GraphicsMemoryManager::DescriptorView m_tetKeysUAV;
     Gradient::GraphicsMemoryManager::DescriptorView m_tetIndicesUAV;
 
+    std::unique_ptr<ISV::VolShadowMap> m_volShadowMap;
+
     Gradient::RootSignature m_tetRS;
     std::unique_ptr<Gradient::PipelineState> m_tetPSO;
+
+    // Shadows use tetRS
+    std::unique_ptr<Gradient::PipelineState> m_shadowPSO;
 
     Gradient::RootSignature m_keyWritingRS;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_keyWritingPSO;
@@ -176,6 +185,8 @@ private:
     float m_guiScatteringAsymmetry = 0.75f;
 
     DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 0, 0 };
+
+    bool m_guiDebugVolShadows = false;
 
     // Bullet shooting state
     bool m_didShoot = false;

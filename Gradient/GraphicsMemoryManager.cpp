@@ -15,7 +15,7 @@ namespace Gradient
         m_rtvDescriptors = std::make_unique<DirectX::DescriptorPile>(device,
             D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
             D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-            64);
+            256); // need lots for the volumetric shadow map
         m_dsvDescriptors = std::make_unique<DirectX::DescriptorPile>(device,
             D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
             D3D12_DESCRIPTOR_HEAP_FLAG_NONE,

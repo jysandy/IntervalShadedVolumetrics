@@ -9,6 +9,7 @@ cbuffer Constants : register(b0, space0)
     float4x4 view;
     float4x4 persp;
     float4x4 g_InverseViewProj;
+    float4x4 g_ShadowTransform;
     float4 g_CullingFrustumPlanes[6];
     
     float nearplane;
@@ -31,7 +32,7 @@ cbuffer Constants : register(b0, space0)
     float3 g_ShootRayStart;
     float g_FarPlane;
     float3 g_ShootRayEnd;
-    float g_pad2;
+    float g_DebugVolShadows;
 };
 
 struct InstanceData

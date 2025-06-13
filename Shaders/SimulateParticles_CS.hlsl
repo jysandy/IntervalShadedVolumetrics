@@ -41,7 +41,7 @@ void SimulateParticles_CS(uint3 DTid : SV_DispatchThreadID)
     float lineDistance = length(l2p);
     
     float3 bulletScatterVelocity 
-        = g_DidShoot * 0.5 * normalize(l2p) / pow(lineDistance, 2);
+        = g_DidShoot * 0.05 * normalize(l2p) / pow(lineDistance, 2);
     
     Instances[DTid.x].Velocity += acceleration * g_DeltaTime + bulletScatterVelocity;
     Instances[DTid.x].WorldPosition += Instances[DTid.x].Velocity * g_DeltaTime;

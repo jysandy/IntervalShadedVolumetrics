@@ -6,14 +6,13 @@ SamplerState LinearSampler : register(s0, space0);
 
 struct BlendOutput
 {
-    float4 CScat : SV_Target0;
-    float4 Tv : SV_Target1;
+    float4 Color : SV_Target0;
     float Depth : SV_Depth;
 };
 
 static const float PI = 3.14159265359;
 
-float3 ViewTransmittance(float3 extinction, float opticalDepth)
+float Transmittance(float extinction, float opticalDepth)
 {
     return exp(-extinction * opticalDepth);
 }
@@ -95,21 +94,21 @@ float3 MatchSign(float3 v, float3 m)
 float3 IntegrateTransmittance(
     float3 minpoint,
     float3 maxpoint,
-    float3 extinction
+    float extinction
 )
 {
     float Zmin = length(g_CameraPosition - minpoint);
     float Zmax = length(g_CameraPosition - maxpoint);
     
     float Omin = SampleOpticalDepth(minpoint);
-    float Omax = SampleOpticalDepth(maxpoint);
+    float Omax = SampleOpticalDepth(maxpoint);    
     
-    float3 denominator = extinction * ZeroCutoff(Omax - Omin + Zmax - Zmin, EPSILON);
+    float denominator = extinction * ZeroCutoff(Omax - Omin + Zmax - Zmin, EPSILON);
     
-    float3 firstExponent = -extinction * (-Zmin + Zmax + Omax);
-    float3 secondExponent = -extinction * Omin;
+    float firstExponent = -extinction * (-Zmin + Zmax + Omax);
+    float secondExponent = -extinction * Omin;
     
-    float3 numerator = (Zmin - Zmax) * (exp(firstExponent) - exp(secondExponent));
+    float numerator = (Zmin - Zmax) * (exp(firstExponent) - exp(secondExponent));
     
     // Output must be non-negative
     denominator = MatchSign(denominator, numerator);
@@ -118,7 +117,7 @@ float3 IntegrateTransmittance(
 }
 
 float3 ScatteredLight(
-    float3 extinction,
+    float extinction,
     float3 albedo,
     float3 minpoint,
     float3 maxpoint,
@@ -175,16 +174,16 @@ BlendOutput Interval_PS(VertexType input)
     reprojected /= reprojected.w;
     ret.Depth = reprojected.z;
     
-    float3 extinction = input.ExtinctionScale * g_Extinction.xxx / 100.f;
+    float extinction = input.ExtinctionScale * g_Extinction / 100.f;
     
     float opticalDepth = length(b - a);
 
-    ret.Tv = float4(ViewTransmittance(extinction.xxx, opticalDepth), 1);
+    float Tv = Transmittance(extinction, opticalDepth);
 
     float3 V = normalize(g_CameraPosition - a.xyz);
     float3 L = normalize(-g_LightDirection);
     float3 R = g_LightBrightness * g_LightColor;
-    float3 cscat
+    float3 Cscat
         = ScatteredLight(extinction, 
                     g_Albedo, 
                     a.xyz,
@@ -194,11 +193,11 @@ BlendOutput Interval_PS(VertexType input)
 
     if (g_DebugVolShadows > 0)
     {
-        cscat = Debug(a.xyz, b.xyz);
-        ret.Tv = 1;
+        Cscat = Debug(a.xyz, b.xyz);
+        Tv = 1;
     }
     
-    ret.CScat = float4(cscat, 1);
+    ret.Color = float4(Cscat, Tv);
     
     return ret;
 }

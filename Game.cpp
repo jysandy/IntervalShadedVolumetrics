@@ -750,7 +750,7 @@ void Game::CreateDeviceDependentResources()
     blendState.RenderTarget[0].BlendEnable = TRUE;
     blendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
     blendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
-    blendState.RenderTarget[0].DestBlend = D3D12_BLEND_SRC1_COLOR;
+    blendState.RenderTarget[0].DestBlend = D3D12_BLEND_SRC_ALPHA;
 
     psoDesc.BlendState = blendState;
     psoDesc.MS = { msData.data(), msData.size() };

@@ -175,14 +175,14 @@ private:
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_simulationPSO;
 
 
-    DirectX::XMFLOAT3 m_guiAlbedo = { 0.8, 0.08, 0.08 };
-    float m_guiExtinction = 1.2f;
+    DirectX::XMFLOAT3 m_guiAlbedo = { 0.75, 0.75, 0.75 };
+    float m_guiExtinction = 5.f;
 
     DirectX::XMFLOAT3 m_guiLightDirection = { 0, -0.2, 1 };
     float m_guiLightBrightness = 2.f;
 
     DirectX::XMFLOAT3 m_guiLightColor = { 1, 0.8, 0.4 };
-    float m_guiScatteringAsymmetry = 0.75f;
+    float m_guiScatteringAsymmetry = 0.4f;
 
     DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 0, 0 };
 

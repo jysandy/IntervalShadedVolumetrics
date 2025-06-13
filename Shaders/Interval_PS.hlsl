@@ -51,7 +51,45 @@ float SampleOpticalDepth(float3 worldPosition)
     uvw.xy = 1 - uvw.xy;    // why is this necessary?
     
     // Z should already be linear since the projection is orthographic
-    return VolumetricShadowMap.Sample(LinearSampler, uvw + float3(0, 0, 0));
+    return VolumetricShadowMap.Sample(LinearSampler, uvw);
+}
+
+float ZeroCutoff(float v, float e)
+{
+    if (v >= 0)
+    {
+        return max(e, v);
+    }
+    
+    return min(-e, v);
+}
+
+float3 ZeroCutoff(float3 v, float e)
+{
+    return float3(
+        ZeroCutoff(v.x, e),
+        ZeroCutoff(v.y, e),
+        ZeroCutoff(v.z, e)
+    );
+}
+
+float MatchSign(float v, float m)
+{
+    if (sign(v) != sign(m))
+    {
+        return -v;
+    }
+
+    return v;
+}
+
+float3 MatchSign(float3 v, float3 m)
+{
+    return float3(
+        MatchSign(v.x, m.x),
+        MatchSign(v.y, m.y),
+        MatchSign(v.z, m.z)
+    );
 }
 
 float3 IntegrateTransmittance(
@@ -60,106 +98,21 @@ float3 IntegrateTransmittance(
     float3 extinction
 )
 {
-    float zmin = length(g_CameraPosition - minpoint);
-    float zmax = length(g_CameraPosition - maxpoint);
-    float deltaZ = zmax - zmin;
-    float deltaOl = SampleOpticalDepth(maxpoint) - SampleOpticalDepth(minpoint);
-    float deltaZPlusOl = deltaZ + deltaOl;
-    
-    float3 denominator = extinction * (deltaZPlusOl);
-    
-    float3 a = exp(-extinction * ((zmax * deltaZPlusOl / deltaZ) - zmin));
-    float3 b = exp(-extinction * ((zmin * deltaZPlusOl / deltaZ) - zmin));
-    
-    float3 numerator = deltaZ * (b - a);
-    
-    // TODO: Improve this
-    if (any(denominator == 0))
-    {
-        return deltaZ;
-    }
-
-    return numerator / denominator;
-}
-
-float3 IntegrateTransmittance2(
-    float3 minpoint,
-    float3 maxpoint,
-    float3 extinction
-)
-{
     float Zmin = length(g_CameraPosition - minpoint);
     float Zmax = length(g_CameraPosition - maxpoint);
     
     float Omin = SampleOpticalDepth(minpoint);
     float Omax = SampleOpticalDepth(maxpoint);
-
-    float3 denominator = extinction * (Zmin + Omin - Zmax - Omax);
-    //denominator = max(0.00001.xxx, denominator);
     
-    float3 firstExponent = -extinction * (((Zmax * (Zmin + Omin - Zmax - Omax)) / (Zmin - Zmax)) - Zmin);
-    
-    float3 secondExponent = -extinction * (((Zmin * (Zmin + Omin - Zmax - Omax)) / (Zmin - Zmax)) - Zmin);
-    
-    float3 numerator = (Zmax - Zmin) * (exp(firstExponent) - exp(secondExponent));
-
-    return numerator / denominator;
-}
-
-float3 IntegrateTransmittance3(
-    float3 minpoint,
-    float3 maxpoint,
-    float3 extinction
-)
-{
-    float Zmin = length(g_CameraPosition - minpoint);
-    float Zmax = length(g_CameraPosition - maxpoint);
-    
-    if (Zmax - Zmin < EPSILON)
-    {
-        return 1.xxx;
-    }
-    
-    float Omin = SampleOpticalDepth(minpoint);
-    float Omax = SampleOpticalDepth(maxpoint);
-    
-    // TODO: Fix divide by zero errors here
-    // The max trick won't work because the denominator could be negative
-    float h = (Omin - Omax) / (Zmin - Zmax);
-    
-    float3 denominator = extinction * (h + 1.f);
-    
-    float3 firstExponent = -extinction * (-Zmin + Zmax + Zmax * h);
-    float3 secondExponent = -extinction * Zmin * h;
-    
-    float3 numerator = -1 * (exp(firstExponent) - exp(secondExponent));
-    
-    return numerator / denominator;
-}
-
-float3 IntegrateTransmittance4(
-    float3 minpoint,
-    float3 maxpoint,
-    float3 extinction
-)
-{
-    float Zmin = length(g_CameraPosition - minpoint);
-    float Zmax = length(g_CameraPosition - maxpoint);
-    
-    if (Zmax - Zmin < EPSILON)
-    {
-        return 1.xxx;
-    }
-    
-    float Omin = SampleOpticalDepth(minpoint);
-    float Omax = SampleOpticalDepth(maxpoint);
-    
-    float3 denominator = extinction * (Omax - Omin + Zmax - Zmin);
+    float3 denominator = extinction * ZeroCutoff(Omax - Omin + Zmax - Zmin, EPSILON);
     
     float3 firstExponent = -extinction * (-Zmin + Zmax + Omax);
     float3 secondExponent = -extinction * Omin;
     
     float3 numerator = (Zmin - Zmax) * (exp(firstExponent) - exp(secondExponent));
+    
+    // Output must be non-negative
+    denominator = MatchSign(denominator, numerator);
     
     return numerator / denominator;
 }
@@ -176,23 +129,10 @@ float3 ScatteredLight(
 {
     float directionality = 0.7f;
     float phase = WeightedPhase(L, V, asymmetry, directionality);
-    float inScatteredPhase = WeightedPhase(L, L, asymmetry, directionality);
     
-    float3 transmissionFactor = IntegrateTransmittance4(minpoint, maxpoint, extinction);
+    float3 transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction);
 
-    //if (extinction.x < EPSILON)
-    //    transmissionFactor.x = opticalDepth;
-    
-    //if (extinction.y < EPSILON)
-    //    transmissionFactor.y = opticalDepth;
-    
-    //if (extinction.z < EPSILON)
-    //    transmissionFactor.z = opticalDepth;
-
-
-    return albedo * extinction * phase 
-        //* inScatteredPhase 
-    * irradiance * transmissionFactor;
+    return albedo * phase * irradiance * transmissionFactor;
 }
 
 float3 Debug(float3 minpoint, float3 maxpoint)
@@ -235,7 +175,7 @@ BlendOutput Interval_PS(VertexType input)
     reprojected /= reprojected.w;
     ret.Depth = reprojected.z;
     
-    float3 extinction = g_Albedo * input.ExtinctionScale * g_Extinction / 100.f;
+    float3 extinction = input.ExtinctionScale * g_Extinction.xxx / 100.f;
     
     float opticalDepth = length(b - a);
 

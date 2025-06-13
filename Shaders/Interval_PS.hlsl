@@ -38,7 +38,7 @@ float WeightedPhase(float3 L, float3 V, float asymmetry, float directionality)
     return lerp(constant, hg, directionality);
 }
 
-static const float EPSILON = 0.0001;
+static const float EPSILON = 0.00001;
 
 float SampleOpticalDepth(float3 worldPosition)
 {
@@ -103,7 +103,7 @@ float3 IntegrateTransmittance(
     float Omin = SampleOpticalDepth(minpoint);
     float Omax = SampleOpticalDepth(maxpoint);    
     
-    float denominator = extinction * ZeroCutoff(Omax - Omin + Zmax - Zmin, EPSILON);
+    float denominator = ZeroCutoff(Omax - Omin + Zmax - Zmin, EPSILON);
     
     float firstExponent = -extinction * (-Zmin + Zmax + Omax);
     float secondExponent = -extinction * Omin;
@@ -175,6 +175,7 @@ BlendOutput Interval_PS(VertexType input)
     ret.Depth = reprojected.z;
     
     float extinction = input.ExtinctionScale * g_Extinction / 100.f;
+    extinction = max(EPSILON, extinction);
     
     float opticalDepth = length(b - a);
 

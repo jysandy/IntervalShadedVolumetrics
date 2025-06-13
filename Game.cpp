@@ -225,8 +225,8 @@ void Game::RenderProps(ID3D12GraphicsCommandList6* cl,
     Vector3 normalizedLightDirection)
 {
     m_effect->SetLightEnabled(0, true);
-    m_effect->SetLightDiffuseColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
-    m_effect->SetLightSpecularColor(0, m_guiLightBrightness * Vector3(m_guiLightColor));
+    m_effect->SetLightDiffuseColor(0, m_guiLightBrightness * BrightnessScale * Vector3(m_guiLightColor));
+    m_effect->SetLightSpecularColor(0, m_guiLightBrightness * BrightnessScale * Vector3(m_guiLightColor));
     m_effect->SetDiffuseColor({ 0.7, 0.7, 0.7 });
     m_effect->SetSpecularPower(128);
     m_effect->SetAmbientLightColor(0.001 * Vector3(m_guiLightColor));
@@ -440,7 +440,7 @@ void Game::Render()
     constants.Albedo = m_guiAlbedo;
     constants.Extinction = m_guiExtinction;
     constants.CameraPosition = m_camera.GetCamera().GetPosition();
-    constants.LightBrightness = m_guiLightBrightness;
+    constants.LightBrightness = m_guiLightBrightness * BrightnessScale;
     constants.LightDirection = lightDirection;
     constants.ScatteringAsymmetry = m_guiScatteringAsymmetry;
     constants.LightColor = m_guiLightColor;

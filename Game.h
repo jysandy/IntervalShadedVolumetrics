@@ -32,6 +32,8 @@
 class Game final : public DX::IDeviceNotify
 {
 public:
+    const float BrightnessScale = 10.f;
+
     struct __declspec(align(16)) Constants
     {
         DirectX::XMMATRIX TargetWorld;

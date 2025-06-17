@@ -686,7 +686,7 @@ void Game::CreateDeviceDependentResources()
         ToneMapPostProcess::None,
         ToneMapPostProcess::ST2084);
 
-    m_tonemapperHDR10->SetST2084Parameter(450);
+    m_tonemapperHDR10->SetST2084Parameter(800);
 
     // Initialize ImGUI
 

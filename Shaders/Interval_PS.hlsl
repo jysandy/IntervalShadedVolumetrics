@@ -91,7 +91,7 @@ float3 MatchSign(float3 v, float3 m)
     );
 }
 
-float3 IntegrateTransmittance(
+float IntegrateTransmittance(
     float3 minpoint,
     float3 maxpoint,
     float extinction
@@ -129,7 +129,7 @@ float3 ScatteredLight(
     float directionality = 0.7f;
     float phase = WeightedPhase(L, V, asymmetry, directionality);
     
-    float3 transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction);
+    float transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction);
 
     return albedo * phase * irradiance * transmissionFactor;
 }

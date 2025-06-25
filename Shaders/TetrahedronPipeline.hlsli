@@ -33,6 +33,8 @@ cbuffer Constants : register(b0, space0)
     float g_FarPlane;
     float3 g_ShootRayEnd;
     float g_DebugVolShadows;
+    
+    float g_ExtinctionFalloffRadius;
 };
 
 struct InstanceData
@@ -56,6 +58,7 @@ struct VertexType
     float4 A : POSITION1;
     
     float ExtinctionScale : EXTINCTION;
+    float3 WorldPosition : WORLDPOS;
 };
 
 #endif

@@ -34,6 +34,7 @@
     <ClInclude Include="imgui_impl_dx12.h" />
     <ClInclude Include="Gradient\Rendering\RenderTexture.h" />
     <ClInclude Include="Gradient\Rendering\TextureDrawer.h" />
+    <ClInclude Include="Core\VolShadowMap.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -54,6 +55,7 @@
     <ClCompile Include="imgui_impl_dx12.cpp" />
     <ClCompile Include="Gradient\Rendering\RenderTexture.cpp" />
     <ClCompile Include="Gradient\Rendering\TextureDrawer.cpp" />
+    <ClCompile Include="Core\VolShadowMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -78,10 +80,14 @@
     <None Include="Shaders\TetrahedronPipeline.hlsli" />
     <None Include="Shaders\Quaternion.hlsli" />
     <None Include="GetLibraries.ps1" />
+    <None Include="Shaders\Culling.hlsli" />
+    <None Include="Shaders\RenderingEquation.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />
     <FxCompile Include="Shaders\Interval_PS.hlsl" />
     <FxCompile Include="Shaders\WriteSortingKeys_CS.hlsl" />
+    <FxCompile Include="Shaders\SimulateParticles_CS.hlsl" />
+    <FxCompile Include="Shaders\VolShadowMap_PS.hlsl" />
   </ItemGroup>
 </Project>

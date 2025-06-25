@@ -6,3 +6,5 @@ PIXCaptures/
 Profiling/
 packages/
 vendor/
+rendering_equation.py
+__pycache__/

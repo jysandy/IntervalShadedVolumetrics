@@ -63,6 +63,8 @@ public:
         float FarPlane;
         DirectX::XMFLOAT3 ShootRayEnd = { 1, 1, 1 };
         float DebugVolShadows = 0;
+
+        float ExtinctionFalloffRadius = 0.3f;
     };
 
     struct __declspec(align(16)) InstanceData

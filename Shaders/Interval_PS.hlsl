@@ -1,4 +1,5 @@
 #include "TetrahedronPipeline.hlsli"
+#include "RenderingEquation.hlsli"
 
 Texture3D<float> VolumetricShadowMap : register(t2, space0);
 
@@ -11,11 +12,6 @@ struct BlendOutput
 };
 
 static const float PI = 3.14159265359;
-
-float Transmittance(float extinction, float opticalDepth)
-{
-    return exp(-extinction * opticalDepth);
-}
 
 // The Henyey-Greenstein phase function
 // TODO: Should this be wavelength dependent?
@@ -30,7 +26,7 @@ float HGPhase(float3 L, float3 V, float asymmetry)
 }
 
 float WeightedPhase(float3 L, float3 V, float asymmetry, float directionality)
-{    
+{
     float constant = 1.f / (4 * PI);
     
     float hg = HGPhase(L, V, asymmetry);
@@ -40,80 +36,103 @@ float WeightedPhase(float3 L, float3 V, float asymmetry, float directionality)
 
 static const float EPSILON = 0.00001;
 
-float SampleOpticalDepth(float3 worldPosition)
+float SampleOpticalThickness(float3 worldPosition)
 {
     float4 transformed = mul(float4(worldPosition, 1), g_ShadowTransform);
     
     transformed /= transformed.w;
     float3 uvw = transformed.xyz;
     
-    uvw.xy = 1 - uvw.xy;    // why is this necessary?
+    uvw.xy = 1 - uvw.xy; // why is this necessary?
     
     // Z should already be linear since the projection is orthographic
     return VolumetricShadowMap.Sample(LinearSampler, uvw);
 }
 
-float ZeroCutoff(float v, float e)
+float Transmittance(float extinction, float opticalDepth)
 {
-    if (v >= 0)
-    {
-        return max(e, v);
-    }
+    return exp(-extinction * opticalDepth);
+}
+
+float FadedTransmittance(
+    float3 minpoint,
+    float3 maxpoint,
+    float extinction,
+    float3 centrePos,
+    float falloffRadius)
+{
+    float Zmin = length(g_CameraPosition - minpoint);
+    float Zmax = length(g_CameraPosition - maxpoint);
     
-    return min(-e, v);
-}
-
-float3 ZeroCutoff(float3 v, float e)
-{
-    return float3(
-        ZeroCutoff(v.x, e),
-        ZeroCutoff(v.y, e),
-        ZeroCutoff(v.z, e)
-    );
-}
-
-float MatchSign(float v, float m)
-{
-    if (sign(v) != sign(m))
-    {
-        return -v;
-    }
-
-    return v;
-}
-
-float3 MatchSign(float3 v, float3 m)
-{
-    return float3(
-        MatchSign(v.x, m.x),
-        MatchSign(v.y, m.y),
-        MatchSign(v.z, m.z)
-    );
+    float Omin = SampleOpticalThickness(minpoint);
+    float Omax = SampleOpticalThickness(maxpoint);
+    
+    float3 V = normalize(maxpoint - minpoint);
+    float3 toCentre = normalize(centrePos - minpoint);
+    float d = pow(length(centrePos - minpoint), 2);
+    float cosAlpha = clamp(dot(V, toCentre), -1, 1);
+    
+    return FadedTransmittanceTv(Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius, EPSILON);
 }
 
 float IntegrateTransmittance(
     float3 minpoint,
     float3 maxpoint,
-    float extinction
+    float extinction,
+    float3 centrePos,
+    float falloffRadius
 )
 {
     float Zmin = length(g_CameraPosition - minpoint);
     float Zmax = length(g_CameraPosition - maxpoint);
     
-    float Omin = SampleOpticalDepth(minpoint);
-    float Omax = SampleOpticalDepth(maxpoint);    
+    float Omin = SampleOpticalThickness(minpoint);
+    float Omax = SampleOpticalThickness(maxpoint);    
     
-    float denominator = ZeroCutoff(Omax - Omin + Zmax - Zmin, EPSILON);
+    float denominator = ZeroCutoff(Omax - Omin + extinction * (Zmax - Zmin), EPSILON);
     
-    float firstExponent = -extinction * (-Zmin + Zmax + Omax);
-    float secondExponent = -extinction * Omin;
+    float firstExponent = extinction * Zmax + Omax;
+    float secondExponent = extinction * Zmin + Omin;
+    float thirdExponent = -extinction * Zmax - Omax - Omin;
     
-    float numerator = (Zmin - Zmax) * (exp(firstExponent) - exp(secondExponent));
+    float numerator 
+        = extinction * (Zmin - Zmax) * (exp(firstExponent) - exp(secondExponent)) * exp(thirdExponent);
     
     // Output must be non-negative
     denominator = MatchSign(denominator, numerator);
     
     return numerator / denominator;
+}
+
+float IntegrateFadedTransmittance(
+    float3 minpoint,
+    float3 maxpoint,
+    float extinction,
+    float3 centrePos,
+    float falloffRadius
+)
+{
+    float Zmin = length(g_CameraPosition - minpoint);
+    float Zmax = length(g_CameraPosition - maxpoint);
+    
+    float Omin = SampleOpticalThickness(minpoint);
+    float Omax = SampleOpticalThickness(maxpoint);
+    
+    float3 V = normalize(maxpoint - minpoint);
+    float3 toCentre = normalize(centrePos - minpoint);
+    float d = pow(length(centrePos - minpoint), 2);
+    float cosAlpha = clamp(dot(V, toCentre), -1, 1);
+    
+    return FadedTransmittanceEquation(
+        Zmin, 
+        Zmax, 
+        Omin, 
+        Omax, 
+        d, 
+        cosAlpha, 
+        extinction, 
+        falloffRadius, 
+        EPSILON);
 }
 
 float3 ScatteredLight(
@@ -124,12 +143,15 @@ float3 ScatteredLight(
     float3 irradiance,
     float3 L,
     float3 V,
-    float asymmetry)
+    float asymmetry,
+    float3 centrePos,
+    float falloffRadius)
 {
     float directionality = 0.7f;
     float phase = WeightedPhase(L, V, asymmetry, directionality);
     
-    float transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction);
+    //float transmissionFactor = IntegrateFadedTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);
+    float transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);
 
     return albedo * phase * irradiance * transmissionFactor;
 }
@@ -138,14 +160,14 @@ float3 Debug(float3 minpoint, float3 maxpoint)
 {
     float3 avg = (minpoint + maxpoint) / 2.f;
     
-    float od = SampleOpticalDepth(avg);
+    float od = SampleOpticalThickness(avg);
     
     if (od < 0)
     {
         return float3(0, 0, 1);
     }
     
-    float transmittance = exp(-0.2 * od);
+    float transmittance = exp(-od);
     
     if (transmittance > 1)
         return float3(0, 0, 1);
@@ -153,7 +175,7 @@ float3 Debug(float3 minpoint, float3 maxpoint)
     //return pow(1 - (od / 1000.f), 200).xxx;
     
     //return pow(saturate(transmittance), 10).xxx / 5.f;
-    return pow(transmittance, 1).xxx * 0.1f;
+    return pow(transmittance, 2).xxx * 0.1f;
 }
 
 BlendOutput Interval_PS(VertexType input)
@@ -180,17 +202,25 @@ BlendOutput Interval_PS(VertexType input)
     float opticalDepth = length(b - a);
 
     float Tv = Transmittance(extinction, opticalDepth);
+    
+    //float Tv = FadedTransmittance(a.xyz,
+    //                b.xyz,
+    //                extinction,
+    //                input.WorldPosition,
+    //                g_ExtinctionFalloffRadius);
 
     float3 V = normalize(g_CameraPosition - a.xyz);
     float3 L = normalize(-g_LightDirection);
     float3 R = g_LightBrightness * g_LightColor;
     float3 Cscat
-        = ScatteredLight(extinction, 
-                    g_Albedo, 
+        = ScatteredLight(extinction,
+                    g_Albedo,
                     a.xyz,
                     b.xyz,
-                    R, L, V, 
-                    g_ScatteringAsymmetry);
+                    R, L, V,
+                    g_ScatteringAsymmetry,
+                    input.WorldPosition,
+                    g_ExtinctionFalloffRadius);
 
     if (g_DebugVolShadows > 0)
     {

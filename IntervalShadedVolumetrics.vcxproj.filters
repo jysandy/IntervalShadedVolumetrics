@@ -82,6 +82,7 @@
     <None Include="GetLibraries.ps1" />
     <None Include="Shaders\Culling.hlsli" />
     <None Include="Shaders\RenderingEquation.hlsli" />
+    <None Include="Shaders\Utils.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />

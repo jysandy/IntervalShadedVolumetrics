@@ -1,3 +1,4 @@
+#include "Utils.hlsli"
 #include "TetrahedronPipeline.hlsli"
 #include "RenderingEquation.hlsli"
 
@@ -10,8 +11,6 @@ struct BlendOutput
     float4 Color : SV_Target0;
     float Depth : SV_Depth;
 };
-
-static const float PI = 3.14159265359;
 
 // The Henyey-Greenstein phase function
 // TODO: Should this be wavelength dependent?
@@ -33,8 +32,6 @@ float WeightedPhase(float3 L, float3 V, float asymmetry, float directionality)
     
     return lerp(constant, hg, directionality);
 }
-
-static const float EPSILON = 0.00001;
 
 float SampleOpticalThickness(float3 worldPosition)
 {
@@ -64,15 +61,12 @@ float FadedTransmittance(
     float Zmin = length(g_CameraPosition - minpoint);
     float Zmax = length(g_CameraPosition - maxpoint);
     
-    float Omin = SampleOpticalThickness(minpoint);
-    float Omax = SampleOpticalThickness(maxpoint);
-    
     float3 V = normalize(maxpoint - minpoint);
     float3 toCentre = normalize(centrePos - minpoint);
-    float d = pow(length(centrePos - minpoint), 2);
+    float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(V, toCentre), -1, 1);
     
-    return FadedTransmittanceTv(Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius, EPSILON);
+    return FadedTransmittanceTv2(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius, EPSILON);
 }
 
 float IntegrateTransmittance(
@@ -175,7 +169,7 @@ float3 Debug(float3 minpoint, float3 maxpoint)
     //return pow(1 - (od / 1000.f), 200).xxx;
     
     //return pow(saturate(transmittance), 10).xxx / 5.f;
-    return pow(transmittance, 2).xxx * 0.1f;
+    return pow(transmittance, 1).xxx * 0.1f;
 }
 
 BlendOutput Interval_PS(VertexType input)
@@ -196,18 +190,18 @@ BlendOutput Interval_PS(VertexType input)
     reprojected /= reprojected.w;
     ret.Depth = reprojected.z;
     
-    float extinction = input.ExtinctionScale * g_Extinction / 100.f;
+    float extinction = input.ExtinctionScale * g_Extinction / 10.f;
     extinction = max(EPSILON, extinction);
     
     float opticalDepth = length(b - a);
 
-    float Tv = Transmittance(extinction, opticalDepth);
+    //float Tv = Transmittance(extinction, opticalDepth);
     
-    //float Tv = FadedTransmittance(a.xyz,
-    //                b.xyz,
-    //                extinction,
-    //                input.WorldPosition,
-    //                g_ExtinctionFalloffRadius);
+    float Tv = FadedTransmittance(a.xyz,
+                    b.xyz,
+                    extinction,
+                    input.WorldPosition,
+                    g_ExtinctionFalloffRadius);
 
     float3 V = normalize(g_CameraPosition - a.xyz);
     float3 L = normalize(-g_LightDirection);

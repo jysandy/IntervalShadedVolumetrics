@@ -1,7 +1,8 @@
 #ifndef __TETRAHEDRON_PIPELINE_HLSLI__
 #define __TETRAHEDRON_PIPELINE_HLSLI__
 
-#include "Quaternion.hlsli"                                     
+#include "Quaternion.hlsli"         
+#include "RenderingEquation.hlsli"
 
 cbuffer Constants : register(b0, space0)
 {

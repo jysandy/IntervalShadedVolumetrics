@@ -1,6 +1,8 @@
 #ifndef __RENDERING_EQUATION_HLSLI__
 #define __RENDERING_EQUATION_HLSLI__
 
+#include "Utils.hlsli"
+
 float ZeroCutoff(float v, float e)
 {
     if (v >= 0)
@@ -227,6 +229,44 @@ float FadedTransmittanceTv(
     numerator *= sigma;
     
     return exp(numerator / 3 * u2);
+}
+
+float FadedOpticalThickness(
+    float zmin,
+    float zmax,
+    float d,
+    float cosAlpha,
+    float sigma,
+    float u,
+    float epsilon
+)
+{
+    float sigma2 = sigma * sigma;
+    float d2 = d * d;
+    float u2 = u * u;
+    
+    float prefix = sigma * 0.1 * sqrt(5 * PI) * u;
+    
+    float root5 = sqrt(5);
+    
+    float firstExp = root5 * d * cosAlpha / u;
+    float secondExp = root5 * (d * cosAlpha - zmax + zmin) / u;
+    float thirdExp = (5 * d2 * cosAlpha * cosAlpha - 5 * d2) / u2;
+    
+    return prefix * (erf(firstExp) - erf(secondExp)) * exp(thirdExp);
+}
+
+float FadedTransmittanceTv2(
+    float zmin,
+    float zmax,
+    float d,
+    float cosAlpha,
+    float sigma,
+    float u,
+    float epsilon
+)
+{
+    return exp(-FadedOpticalThickness(zmin, zmax, d, cosAlpha, sigma, u, epsilon));
 }
 
 #endif

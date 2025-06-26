@@ -374,6 +374,7 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     <None Include="Shaders\Quaternion.hlsli" />
     <None Include="Shaders\RenderingEquation.hlsli" />
     <None Include="Shaders\TetrahedronPipeline.hlsli" />
+    <None Include="Shaders\Utils.hlsli" />
     <None Include="vcpkg-configuration.json" />
     <None Include="vcpkg.json" />
   </ItemGroup>

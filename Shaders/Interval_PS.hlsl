@@ -66,7 +66,7 @@ float FadedTransmittance(
     float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(V, toCentre), -1, 1);
     
-    return FadedTransmittanceTv2(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius, EPSILON);
+    return FadedTransmittanceTv2(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
 }
 
 float IntegrateTransmittance(
@@ -114,19 +114,19 @@ float IntegrateFadedTransmittance(
     
     float3 V = normalize(maxpoint - minpoint);
     float3 toCentre = normalize(centrePos - minpoint);
-    float d = pow(length(centrePos - minpoint), 2);
-    float cosAlpha = clamp(dot(V, toCentre), -1, 1);
+    float d = length(centrePos - minpoint);
+    float cosAlpha = clamp(dot(V, toCentre), -1, 1);    
     
-    return FadedTransmittanceEquation(
-        Zmin, 
-        Zmax, 
-        Omin, 
-        Omax, 
-        d, 
-        cosAlpha, 
-        extinction, 
-        falloffRadius, 
-        EPSILON);
+    return max(0, IntegrateTaylorSeries(
+        2,
+        Zmin,
+        Zmax,
+        Omin,
+        Omax,
+        d,
+        cosAlpha,
+        extinction,
+        falloffRadius));
 }
 
 float3 ScatteredLight(
@@ -144,10 +144,10 @@ float3 ScatteredLight(
     float directionality = 0.7f;
     float phase = WeightedPhase(L, V, asymmetry, directionality);
     
-    //float transmissionFactor = IntegrateFadedTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);
-    float transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);
+    float transmissionFactor = IntegrateFadedTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);
+    //float transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);
 
-    return albedo * phase * irradiance * transmissionFactor;
+    return albedo * phase * irradiance * 1 * transmissionFactor;
 }
 
 float3 Debug(float3 minpoint, float3 maxpoint)
@@ -190,7 +190,7 @@ BlendOutput Interval_PS(VertexType input)
     reprojected /= reprojected.w;
     ret.Depth = reprojected.z;
     
-    float extinction = input.ExtinctionScale * g_Extinction / 10.f;
+    float extinction = input.ExtinctionScale * g_Extinction / 100.f;
     extinction = max(EPSILON, extinction);
     
     float opticalDepth = length(b - a);
@@ -215,6 +215,13 @@ BlendOutput Interval_PS(VertexType input)
                     g_ScatteringAsymmetry,
                     input.WorldPosition,
                     g_ExtinctionFalloffRadius);
+    
+    //if (any(isnan(Cscat)))
+    //{
+    //    Cscat = 0.xxx;
+    //}
+    
+    //Cscat = 0.xxx;
 
     if (g_DebugVolShadows > 0)
     {

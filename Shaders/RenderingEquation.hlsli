@@ -5,6 +5,11 @@
 
 float ZeroCutoff(float v, float e)
 {
+    if (isnan(v))
+    {
+        return e;
+    }
+    
     if (v >= 0)
     {
         return max(e, v);
@@ -41,204 +46,29 @@ float3 MatchSign(float3 v, float3 m)
     );
 }
 
-float FadedTransmittanceEquation(
-    float zmin,
-    float zmax,
-    float omin, 
-    float omax,
-    float d,
-    float cosAlpha,
-    float sigma,
-    float u,
-    float epsilon
-)
+float factorial(float n)
 {
-    float zmaxMinuszmin = zmax - zmin;
-    float innerExp = exp(-omin * sigma * zmax / zmaxMinuszmin + sigma * zmin - omin * sigma * zmin / zmaxMinuszmin);
-    float cosAlphaInnerExp = cosAlpha * innerExp;
-    float sndInnerExp = exp(sigma * zmax - omin * sigma * zmax / zmaxMinuszmin - omax * sigma * zmin / zmaxMinuszmin);
-    float trdInnerExp = exp(-omax * sigma * zmax / zmaxMinuszmin + sigma * zmin - omin * sigma * zmin / zmaxMinuszmin);
-    float fthInnerExp = exp(sigma * zmax - omin * sigma * zmax / zmaxMinuszmin - omax * sigma * zmin / zmaxMinuszmin); 
+    if (n == 0)
+    {
+        return 1;
+    }
     
-    float cosAlphaTrdInnerExp = cosAlpha * trdInnerExp;
-    float cosAlphaFthInnerExp = cosAlpha * fthInnerExp;
+    float fac = 1;
+    for (uint i = 1; i <= n; i++)
+    {
+        fac *= i;
+    }
     
-    float omax2 = omax * omax;
-    float omin2 = omin * omin;
-    float zmax2 = zmax * zmax;
-    float zmin2 = zmin * zmin;
-    float sigma2 = sigma * sigma;
-    float d2 = d * d;
-    float u2 = u * u;
-    float ominomax = omin * omax;
-    float zminzmax = zmin * zmax;
-    
-    float numeratorSum
-        = 2 * omax2 * d * sigma2 * zmax * cosAlphaInnerExp
-          - 4 * ominomax * d * sigma2 * zmax * cosAlphaInnerExp
-          + 2 * omin2 * d * sigma2 * zmax * cosAlphaInnerExp
-          + 4 * omax * d * sigma2 * zmax2 * cosAlphaInnerExp
-          - 4 * omin * d * sigma2 * zmax2 * cosAlphaInnerExp
-          + 2 * d * sigma2 * zmax2 * zmax * cosAlphaInnerExp
-          - 2 * omax2 * d * sigma2 * zmin * cosAlphaInnerExp
-          + 4 * ominomax * d * sigma2 * zmin * cosAlphaInnerExp
-          - 2 * omin2 * d * sigma2 * zmin * cosAlphaInnerExp
-          - 8 * omax * d * sigma2 * zminzmax * cosAlphaInnerExp
-          + 8 * omin * d * sigma2 * zminzmax * cosAlphaInnerExp
-          - 6 * d * sigma2 * zmax * zminzmax * cosAlphaInnerExp
-          + 4 * omax * d * sigma2 * zmin2 * cosAlphaInnerExp
-          - 4 * omin * d * sigma2 * zmin2 * cosAlphaInnerExp
-          + 6 * d * sigma2 * zmin * zminzmax * cosAlphaInnerExp
-          - 2 * d * sigma2 * zmin * zmin2 * cosAlphaInnerExp
-          - omax2 * d2 * sigma2 * sndInnerExp
-          + 2 * ominomax * d2 * sigma2 * sndInnerExp
-          - omin2 * d2 * sigma2 * sndInnerExp
-          + omax2 * sigma2 * u2 * sndInnerExp
-          - 2 * ominomax * sigma2 * u2 * sndInnerExp
-          + omin2 * sigma2 * u2 * sndInnerExp
-          - 2 * omax * d2 * sigma2 * zmax * sndInnerExp
-          + 2 * omin * d2 * sigma2 * zmax * sndInnerExp
-          + 2 * omax * sigma2 * u2 * zmax * sndInnerExp
-          - 2 * omin * sigma2 * u2 * zmax * sndInnerExp
-          - d2 * sigma2 * zmax2 * sndInnerExp
-          + sigma2 * u2 * zmax2 * sndInnerExp
-          + 2 * omax * d2 * sigma2 * zmin * sndInnerExp
-          - 2 * omin * d2 * sigma2 * zmin * sndInnerExp
-          - 2 * omax * sigma2 * u2 * zmin * sndInnerExp
-          + 2 * omin * sigma2 * u2 * zmin * sndInnerExp
-          + 2 * d2 * sigma2 * zminzmax * sndInnerExp
-          - 2 * sigma2 * u2 * zminzmax * sndInnerExp
-          - d2 * sigma2 * zmin2 * sndInnerExp
-          + sigma2 * u2 * zmin2 * sndInnerExp
-          + omax2 * d2 * sigma2 * trdInnerExp
-          - 2 * ominomax * d2 * sigma2 * trdInnerExp
-          + omin2 * d2 * sigma2 * trdInnerExp
-          - omax2 * sigma2 * u2 * trdInnerExp
-          + 2 * ominomax * sigma2 * u2 * trdInnerExp
-          - omin2 * sigma2 * u2 * trdInnerExp
-          + 2 * omax * d2 * sigma2 * zmax * trdInnerExp
-          - 2 * omin * d2 * sigma2 * zmax * trdInnerExp
-          - 2 * omax * sigma2 * u2 * zmax * trdInnerExp
-          + 2 * omin * sigma2 * u2 * zmax * trdInnerExp
-          - omax2 * sigma2 * zmax2 * trdInnerExp
-          + 2 * ominomax * sigma2 * zmax2 * trdInnerExp
-          - omin2 * sigma2 * zmax2 * trdInnerExp
-          + d2 * sigma2 * zmax2 * trdInnerExp
-          - sigma2 * u2 * zmax2 * trdInnerExp
-          - 2 * omax * sigma2 * zmax * zmax2 * trdInnerExp
-          + 2 * omin * sigma2 * zmax * zmax2 * trdInnerExp
-          - sigma2 * zmax2 * zmax2 * trdInnerExp
-          - 2 * omax * d2 * sigma2 * zmin * trdInnerExp
-          + 2 * omin * d2 * sigma2 * zmin * trdInnerExp
-          + 2 * omax * sigma2 * u2 * zmin * trdInnerExp
-          - 2 * omin * sigma2 * u2 * zmin * trdInnerExp
-          + 2 * omax2 * sigma2 * zminzmax * trdInnerExp
-          - 4 * ominomax * sigma2 * zminzmax * trdInnerExp
-          + 2 * omin2 * sigma2 * zminzmax * trdInnerExp
-          - 2 * d2 * sigma2 * zminzmax * trdInnerExp
-          + 2 * sigma2 * u2 * zminzmax * trdInnerExp
-          + 6 * omax * sigma2 * zmax * zminzmax * trdInnerExp
-          - 6 * omin * sigma2 * zmax * zminzmax * trdInnerExp
-          + 4 * sigma2 * zmax * zminzmax * trdInnerExp
-          - omax2 * sigma2 * zmin2 * trdInnerExp
-          + 2 * ominomax * sigma2 * zmin2 * trdInnerExp
-          - omin2 * sigma2 * zmin2 * trdInnerExp
-          + d2 * sigma2 * zmin2 * trdInnerExp
-          - sigma2 * u2 * zmin2 * trdInnerExp
-          - 6 * omax * sigma2 * zminzmax * zmin * trdInnerExp
-          + 6 * omin * sigma2 * zminzmax * zmin * trdInnerExp
-          - 6 * sigma2 * zmin2 * zmax2 * trdInnerExp
-          + 2 * omax * sigma2 * zmin * zmin2 * trdInnerExp
-          - 2 * omin * sigma2 * zmin * zmin2 * trdInnerExp
-          + 4 * sigma2 * zminzmax * zmin * trdInnerExp
-          - sigma2 * zmin2 * zmin2 * trdInnerExp
-          - 2 * omax * d * sigma * zmax * cosAlphaFthInnerExp
-          + 2 * omin * d * sigma * zmax * cosAlphaFthInnerExp
-          - 2 * d * sigma * zmax2 * cosAlphaFthInnerExp
-          + 2 * omax * d * sigma * zmin * cosAlphaFthInnerExp
-          - 2 * omin * d * sigma * zmin * cosAlphaFthInnerExp
-          + 4 * d * sigma * zminzmax * cosAlphaFthInnerExp
-          - 2 * d * zmin2 * cosAlphaFthInnerExp
-          + 2 * omax * d * sigma * zmax * cosAlphaTrdInnerExp
-          - 2 * omin * d * sigma * zmax * cosAlphaTrdInnerExp
-          + 2 * d * sigma * zmax2 * cosAlphaTrdInnerExp
-          - 2 * omax * d * sigma * zmin * cosAlphaTrdInnerExp
-          + 2 * omin * d * sigma * zmin * cosAlphaTrdInnerExp
-          - 4 * d * sigma * zminzmax * cosAlphaTrdInnerExp
-          + 2 * d * sigma * zmin2 * cosAlphaTrdInnerExp
-          - 2 * omax * sigma * zmax2 * trdInnerExp
-          + 2 * omin * sigma * zmax2 * trdInnerExp
-          - 2 * sigma * zmax * zmax2 * trdInnerExp
-          + 4 * omax * sigma * zminzmax * trdInnerExp
-          - 4 * omin * sigma * zminzmax * trdInnerExp
-          + 6 * sigma * zmax2 * zmin * trdInnerExp
-          - 2 * omax * sigma * zmin2 * trdInnerExp
-          + 2 * omin * sigma * zmin2 * trdInnerExp
-          - 6 * sigma * zmax * zmin2 * trdInnerExp
-          + 2 * sigma * zmin * zmin2 * trdInnerExp
-          + 2 * zmax2 * fthInnerExp
-          - 4 * zminzmax * fthInnerExp
-          + 2 * zmin2 * fthInnerExp
-          - 2 * zmax2 * trdInnerExp
-          + 4 * zminzmax * trdInnerExp
-          - 2 * zmin2 * trdInnerExp;
-    float numerator = numeratorSum * zmaxMinuszmin *
-        exp(-omin * sigma - sigma * zmax + omin * sigma * zmax / zmaxMinuszmin + omax * sigma * zmin / zmaxMinuszmin);
-    
-    float denominatorCubeRoot = omax - omin + zmaxMinuszmin;
-    float denominator = ZeroCutoff(pow(denominatorCubeRoot, 3) * sigma2 * u2, epsilon);
-    
-    // Output must be non-negative
-    denominator = MatchSign(denominator, numerator);
-    
-    return numerator / denominator;
-}
-
-float FadedTransmittanceTv(
-    float zmin,
-    float zmax,
-    float omin,
-    float omax,
-    float d,
-    float cosAlpha,
-    float sigma,
-    float u,
-    float epsilon
-)
-{
-    float omax2 = omax * omax;
-    float omin2 = omin * omin;
-    float zmax2 = zmax * zmax;
-    float zmin2 = zmin * zmin;
-    float sigma2 = sigma * sigma;
-    float d2 = d * d;
-    float u2 = u * u;
-    float ominomax = omin * omax;
-    float zminzmax = zmin * zmax;
-    
-    float numerator =
-        3 * d * zmax2 * cosAlpha
-        + 3 * d * zmin2 * cosAlpha
-        - zmax * zmax2
-        - 3 * zmax * zmin2
-        + zmin * zmin2
-        + 3 * (d2 - u2) * zmax
-        - 3 * (2 * d * zmax * cosAlpha - zmax2) * zmin
-        - 3 * (d2 - u2) * zmin;
-    
-    numerator *= sigma;
-    
-    return exp(numerator / 3 * u2);
+    return fac;
 }
 
 float FadedOpticalThickness(
     float zmin,
-    float zmax,
+    float z,
     float d,
     float cosAlpha,
     float sigma,
-    float u,
-    float epsilon
+    float u
 )
 {
     float sigma2 = sigma * sigma;
@@ -250,7 +80,7 @@ float FadedOpticalThickness(
     float root5 = sqrt(5);
     
     float firstExp = root5 * d * cosAlpha / u;
-    float secondExp = root5 * (d * cosAlpha - zmax + zmin) / u;
+    float secondExp = root5 * (d * cosAlpha - z + zmin) / u;
     float thirdExp = (5 * d2 * cosAlpha * cosAlpha - 5 * d2) / u2;
     
     return prefix * (erf(firstExp) - erf(secondExp)) * exp(thirdExp);
@@ -258,15 +88,209 @@ float FadedOpticalThickness(
 
 float FadedTransmittanceTv2(
     float zmin,
-    float zmax,
+    float z,
     float d,
     float cosAlpha,
     float sigma,
-    float u,
-    float epsilon
+    float u
 )
 {
-    return exp(-FadedOpticalThickness(zmin, zmax, d, cosAlpha, sigma, u, epsilon));
+    return exp(-FadedOpticalThickness(zmin, z, d, cosAlpha, sigma, u));
+}
+
+float Sigma_t(
+    float zmin,
+    float z,
+    float d,
+    float cosAlpha,
+    float sigma,
+    float u
+)
+{
+    float zMinusZmin = z - zmin;
+    float zMinusZmin2 = zMinusZmin * zMinusZmin;
+    
+    float numerator
+        = 5 * (2 * d * zMinusZmin * cosAlpha - d * d - zMinusZmin2);
+    float exponent = numerator / (u * u);
+    
+    return sigma * exp(exponent);
+}
+
+float T_L(
+    float zmin,
+    float z,
+    float zmax,
+    float omin,
+    float omax
+)
+{
+    float omaxMinusOmin = omax - omin;
+    float zmaxMinusZmin = zmax - zmin;
+    float zMinusZmin = z - zmin;
+    
+    return exp(-omin - (omaxMinusOmin * zMinusZmin / ZeroCutoff(zmaxMinusZmin, 0.00001)));
+}
+
+float f(float x,
+    float zmin,
+    float zmax,
+    float omin,
+    float omax,
+    float d,
+    float cosAlpha,
+    float sigma,
+    float u)
+{
+    float t_v = FadedTransmittanceTv2(zmin, x, d, cosAlpha, sigma, u);
+    float sigma_t = Sigma_t(zmin, x, d, cosAlpha, sigma, u);
+    float t_l = T_L(zmin, x, zmax, omin, omax);
+
+    return t_v * sigma_t * t_l;
+}
+
+float DerivativeDivNFactorial(uint n, float x,
+    float zmin,
+    float zmax,
+    float omin,
+    float omax,
+    float d,
+    float cosAlpha,
+    float sigma,
+    float u)
+{
+    const float h = 0.00001;
+    
+    float difference = 0;
+    
+    float iFactorial = 1;
+    for (uint i = 0; i <= n; i++)
+    {
+        float sign = -1;
+        if ((n - i) % 2 == 0)
+        {
+            sign = 1;
+        }
+        
+        iFactorial *= max(i, 1);
+        float nMinusiFactorial = factorial(n - i);
+        
+        float foo = f(x + i * h,
+            zmin,
+            zmax,
+            omin,
+            omax,
+            d,
+            cosAlpha,
+            sigma,
+            u
+        );
+        
+        difference += sign * foo / (iFactorial * nMinusiFactorial);
+    }
+
+    return difference / ZeroCutoff(pow(h, n), 0.0000001);
+}
+
+float BetterPower(float base, uint y)
+{
+    if (y == 0)
+    {
+        return 1;
+    }
+    
+    float result = 1;
+    
+    for (uint i = 0; i < y; i++)
+    {
+        result *= base;
+    }
+    
+    return result;
+}
+
+float TaylorSeriesAntiderivative(uint count, float evaluationPoint, float expansionPoint,
+    float zmin,
+    float zmax,
+    float omin,
+    float omax,
+    float d,
+    float cosAlpha,
+    float sigma,
+    float u)
+{
+    float integral = f(expansionPoint,
+        zmin,
+        zmax,
+        omin,
+        omax,
+        d,
+        cosAlpha,
+        sigma,
+        u) * evaluationPoint;
+    
+    for (uint n = 1; n < count; n++)
+    {
+        float derivative = DerivativeDivNFactorial(n, expansionPoint,
+                zmin,
+                zmax,
+                omin,
+                omax,
+                d,
+                cosAlpha,
+                sigma,
+                u);
+        
+        float base = evaluationPoint - expansionPoint;
+        
+        float power = BetterPower(base, n + 1);
+
+        float denominator = (n + 1.f);
+        
+        float multiplier = power / denominator;
+        
+        integral += derivative * multiplier;
+    }                   
+    
+    return integral;
+}
+
+float IntegrateTaylorSeries(uint count,
+    float zmin,
+    float zmax,
+    float omin,
+    float omax,
+    float d,
+    float cosAlpha,
+    float sigma,
+    float u
+)
+{
+    float expansionPoint = (zmin + zmax) / 2.f;
+    
+    float upperLimit = TaylorSeriesAntiderivative(count, zmax, expansionPoint,
+        zmin,
+        zmax,
+        omin,
+        omax,
+        d,
+        cosAlpha,
+        sigma,
+        u
+    );
+    
+    float lowerLimit = TaylorSeriesAntiderivative(count, zmin, expansionPoint,
+        zmin,
+        zmax,
+        omin,
+        omax,
+        d,
+        cosAlpha,
+        sigma,
+        u
+    );
+    
+    return upperLimit - lowerLimit;
 }
 
 #endif

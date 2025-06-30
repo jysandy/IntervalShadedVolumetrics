@@ -142,7 +142,7 @@ float3 ScatteredLight(
     float falloffRadius)
 {
     float directionality = 0.2f;
-    float phase = WeightedPhase(L, V, asymmetry, directionality);
+    float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
     
     float transmissionFactor = IntegrateFadedTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);
     //float transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);

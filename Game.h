@@ -67,6 +67,7 @@ public:
 
         float ExtinctionFalloffRadius = 1.f;
         float Scale = 3.f;
+        float Anisotropy = 0.2f;
     };
 
     struct __declspec(align(16)) InstanceData
@@ -193,6 +194,7 @@ private:
     DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 0, 0 };
 
     float m_guiScale = 3.f;
+    float m_guiAnisotropy = 0.2f;
 
     bool m_guiDebugVolShadows = false;
 

@@ -338,6 +338,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Scale", &m_guiScale, 0.01, 30);
         ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
         ImGui::SliderFloat("Extinction", &m_guiExtinction, 0, 10);
+        ImGui::SliderFloat("Scattering Anisotropy", &m_guiAnisotropy, 0, 1);
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
 
         ImGui::TreePop();
@@ -453,6 +454,7 @@ void Game::Render()
     constants.DebugVolShadows = m_guiDebugVolShadows ? 1 : 0;
     constants.Scale = m_guiScale;
     constants.ExtinctionFalloffRadius = m_guiScale * ExtinctionFalloffFactor;
+    constants.Anisotropy = m_guiAnisotropy;
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
     constants.ShadowTransform = m_volShadowMap->GetShadowTransform().Transpose();

@@ -33,7 +33,7 @@ class Game final : public DX::IDeviceNotify
 {
 public:
     const float BrightnessScale = 10.f;
-    const float ExtinctionFalloffFactor = 1 / 3.f;
+    const int MaxParticles = 65535;
 
     struct __declspec(align(16)) Constants
     {
@@ -195,8 +195,11 @@ private:
 
     float m_guiScale = 3.f;
     float m_guiAnisotropy = 0.2f;
+    float m_guiExtinctionFalloffFactor = 1 / 3.f;
 
     bool m_guiDebugVolShadows = false;
+
+    int m_guiParticleCount = 1000;
 
     // Bullet shooting state
     bool m_didShoot = false;

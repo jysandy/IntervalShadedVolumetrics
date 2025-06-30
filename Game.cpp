@@ -179,7 +179,7 @@ void Game::WriteSortingKeys(ID3D12GraphicsCommandList6* cl,
 
     cl->Dispatch(
         Gradient::Math::DivRoundUp(
-            bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
+            m_guiParticleCount,
             32u),
         1, 1);
 }
@@ -216,7 +216,7 @@ void Game::DispatchParallelSort(ID3D12GraphicsCommandList6* cl,
         L"Tetrahedron_PayloadBuffer",
         FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ
     );
-    dispatchDesc.numKeysToSort = keys->InstanceCount;
+    dispatchDesc.numKeysToSort = m_guiParticleCount;
 
     ThrowIfFfxFailed(ffxParallelSortContextDispatch(&m_parallelSortContext, &dispatchDesc));
 }
@@ -266,7 +266,7 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
 
     cl->DispatchMesh(
         Gradient::Math::DivRoundUp(
-            bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
+            m_guiParticleCount,
             32),
         1, 1);
 }
@@ -310,7 +310,7 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
 
             cl->DispatchMesh(
                 Gradient::Math::DivRoundUp(
-                    bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
+                    m_guiParticleCount,
                     32),
                 1, 1);
         });
@@ -335,9 +335,11 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
 
     if (ImGui::TreeNodeEx("Material", ImGuiTreeNodeFlags_DefaultOpen))
     {
+        ImGui::SliderInt("Particle Count", &m_guiParticleCount, 1, MaxParticles);
         ImGui::SliderFloat("Scale", &m_guiScale, 0.01, 30);
         ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
-        ImGui::SliderFloat("Extinction", &m_guiExtinction, 0, 10);
+        ImGui::SliderFloat("Extinction", &m_guiExtinction, 0, 30);
+        ImGui::SliderFloat("Extinction Falloff", &m_guiExtinctionFalloffFactor, 0, 1);
         ImGui::SliderFloat("Scattering Anisotropy", &m_guiAnisotropy, 0, 1);
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
 
@@ -382,7 +384,7 @@ void Game::SimulateParticles(ID3D12GraphicsCommandList6* cl, const Constants& co
 
     cl->Dispatch(
         Gradient::Math::DivRoundUp(
-            bm->GetInstanceBuffer(m_tetInstances)->InstanceCount,
+            m_guiParticleCount,
             32u),
         1, 1);
 }
@@ -449,11 +451,10 @@ void Game::Render()
     constants.TotalTime = m_timer.GetTotalSeconds();
     constants.DeltaTime = m_timer.GetElapsedSeconds();
     auto instances = bm->GetInstanceBuffer(m_tetInstances);
-    auto instanceCount = instances->InstanceCount;
-    constants.NumInstances = instanceCount;
+    constants.NumInstances = m_guiParticleCount;
     constants.DebugVolShadows = m_guiDebugVolShadows ? 1 : 0;
     constants.Scale = m_guiScale;
-    constants.ExtinctionFalloffRadius = m_guiScale * ExtinctionFalloffFactor;
+    constants.ExtinctionFalloffRadius = m_guiScale * m_guiExtinctionFalloffFactor;
     constants.Anisotropy = m_guiAnisotropy;
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
@@ -863,7 +864,7 @@ void Game::CreateTetrahedronInstances()
     // Create instances
 
     std::vector<InstanceData> instances;
-    for (int i = 0; i < 5000; i++)
+    for (int i = 0; i < MaxParticles; i++)
     {
         Vector3 position;
         position.x = RandomFloat() * 10.f - 5.f;

@@ -264,6 +264,61 @@ float TaylorSeriesAntiderivative(uint count, float evaluationPoint, float expans
     return integral;
 }
 
+void TaylorSeriesCoefficients(out float coefficients[5], uint count, float expansionPoint,
+    float zmin,
+    float zmax,
+    float omin,
+    float omax,
+    float d,
+    float cosAlpha,
+    float sigma,
+    float u)
+{
+    coefficients[0] = f(expansionPoint,
+        zmin,
+        zmax,
+        omin,
+        omax,
+        d,
+        cosAlpha,
+        sigma,
+        u);
+    
+    
+    float nFactorial = 1;
+    
+    for (uint n = 1; n < count; n++)
+    {
+        float derivative = Derivative(n, expansionPoint,
+                zmin,
+                zmax,
+                omin,
+                omax,
+                d,
+                cosAlpha,
+                sigma,
+                u);
+        
+        nFactorial *= n;
+    
+        float denominator = (n + 1.f) * nFactorial;
+        
+        coefficients[n] = derivative / denominator;
+    }    
+}
+
+float EvaluateTaylorIntegralCoefficients(float coefficients[5], float count, float evaluationPoint, float expansionPoint)
+{
+    float integral = coefficients[0] * evaluationPoint;
+    
+    for (int n = 1; n < count; n++)
+    {
+        integral += BetterPower(evaluationPoint - expansionPoint, n + 1) * coefficients[n];
+    }
+
+    return integral;
+}
+
 float IntegrateTaylorSeries(uint count,
     float zmin,
     float zmax,
@@ -277,7 +332,9 @@ float IntegrateTaylorSeries(uint count,
 {
     float expansionPoint = (zmin + zmax) / 2.f;
     
-    float upperLimit = TaylorSeriesAntiderivative(count, zmax, expansionPoint,
+    float coefficients[5];
+    
+    TaylorSeriesCoefficients(coefficients, count, expansionPoint,
         zmin,
         zmax,
         omin,
@@ -288,16 +345,8 @@ float IntegrateTaylorSeries(uint count,
         u
     );
     
-    float lowerLimit = TaylorSeriesAntiderivative(count, zmin, expansionPoint,
-        zmin,
-        zmax,
-        omin,
-        omax,
-        d,
-        cosAlpha,
-        sigma,
-        u
-    );
+    float upperLimit = EvaluateTaylorIntegralCoefficients(coefficients, count, zmax, expansionPoint);
+    float lowerLimit = EvaluateTaylorIntegralCoefficients(coefficients, count, zmin, expansionPoint);
     
     return upperLimit - lowerLimit;
 }

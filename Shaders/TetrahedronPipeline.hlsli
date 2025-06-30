@@ -36,6 +36,7 @@ cbuffer Constants : register(b0, space0)
     float g_DebugVolShadows;
     
     float g_ExtinctionFalloffRadius;
+    float g_Scale;
 };
 
 struct InstanceData

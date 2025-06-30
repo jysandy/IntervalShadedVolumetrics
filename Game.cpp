@@ -335,6 +335,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
 
     if (ImGui::TreeNodeEx("Material", ImGuiTreeNodeFlags_DefaultOpen))
     {
+        ImGui::SliderFloat("Scale", &m_guiScale, 0.01, 30);
         ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
         ImGui::SliderFloat("Extinction", &m_guiExtinction, 0, 10);
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
@@ -450,6 +451,8 @@ void Game::Render()
     auto instanceCount = instances->InstanceCount;
     constants.NumInstances = instanceCount;
     constants.DebugVolShadows = m_guiDebugVolShadows ? 1 : 0;
+    constants.Scale = m_guiScale;
+    constants.ExtinctionFalloffRadius = m_guiScale * ExtinctionFalloffFactor;
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
     constants.ShadowTransform = m_volShadowMap->GetShadowTransform().Transpose();
@@ -858,17 +861,14 @@ void Game::CreateTetrahedronInstances()
     // Create instances
 
     std::vector<InstanceData> instances;
-    for (int i = 0; i < 10000; i++)
+    for (int i = 0; i < 5000; i++)
     {
         Vector3 position;
         position.x = RandomFloat() * 10.f - 5.f;
         position.y = RandomFloat() * 10.f - 5.f;
         position.z = RandomFloat() * 10.f - 5.f;
 
-        float densityMultiplier = std::abs(RandomFloat() * 4.f - 1.f);
-        // Varying densities don't work with the shadow map at the moment.
-        // TODO: Rework the formulas for varying densities
-        densityMultiplier = 1.f;
+        float densityMultiplier = std::abs(RandomFloat() * 10.f - 5.f);
 
         Vector3 rotationAxis = { RandomFloat(), RandomFloat(), RandomFloat() };
         rotationAxis = rotationAxis * 2.f - Vector3(1.f, 1.f, 1.f);

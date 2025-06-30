@@ -33,6 +33,7 @@ class Game final : public DX::IDeviceNotify
 {
 public:
     const float BrightnessScale = 10.f;
+    const float ExtinctionFalloffFactor = 1 / 3.f;
 
     struct __declspec(align(16)) Constants
     {
@@ -64,7 +65,8 @@ public:
         DirectX::XMFLOAT3 ShootRayEnd = { 1, 1, 1 };
         float DebugVolShadows = 0;
 
-        float ExtinctionFalloffRadius = 5 * 0.2f;
+        float ExtinctionFalloffRadius = 1.f;
+        float Scale = 3.f;
     };
 
     struct __declspec(align(16)) InstanceData
@@ -189,6 +191,8 @@ private:
     float m_guiScatteringAsymmetry = 0.4f;
 
     DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 0, 0 };
+
+    float m_guiScale = 3.f;
 
     bool m_guiDebugVolShadows = false;
 

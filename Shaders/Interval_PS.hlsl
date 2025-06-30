@@ -141,7 +141,7 @@ float3 ScatteredLight(
     float3 centrePos,
     float falloffRadius)
 {
-    float directionality = 0.7f;
+    float directionality = 0.2f;
     float phase = WeightedPhase(L, V, asymmetry, directionality);
     
     float transmissionFactor = IntegrateFadedTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);
@@ -216,10 +216,10 @@ BlendOutput Interval_PS(VertexType input)
                     input.WorldPosition,
                     g_ExtinctionFalloffRadius);
     
-    //if (any(isnan(Cscat)))
-    //{
-    //    Cscat = 0.xxx;
-    //}
+    if (any(isnan(Cscat)))
+    {
+        Cscat = 0.xxx;
+    }
     
     //Cscat = 0.xxx;
 

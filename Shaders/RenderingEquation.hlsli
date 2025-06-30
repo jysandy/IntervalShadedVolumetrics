@@ -159,7 +159,7 @@ float DerivativeDivNFactorial(uint n, float x,
     float sigma,
     float u)
 {
-    const float h = 0.00001;
+    const float h = 0.001;
     
     float difference = 0;
     
@@ -244,7 +244,7 @@ float TaylorSeriesAntiderivative(uint count, float evaluationPoint, float expans
         float base = evaluationPoint - expansionPoint;
         
         float power = BetterPower(base, n + 1);
-
+    
         float denominator = (n + 1.f);
         
         float multiplier = power / denominator;

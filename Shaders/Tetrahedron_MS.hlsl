@@ -170,7 +170,7 @@ void Tetrahedron_MS(
         InstanceData instanceData = GetInstanceData(instanceIndex);
         float3 worldPosition = instanceData.WorldPosition;
 
-        const float scaleFactor = 3.f;
+        float scaleFactor = g_Scale;
         
         BoundingSphere bs;
         bs.xyz = worldPosition;

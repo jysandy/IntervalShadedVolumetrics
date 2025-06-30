@@ -149,7 +149,15 @@ float f(float x,
     return t_v * sigma_t * t_l;
 }
 
-float DerivativeDivNFactorial(uint n, float x,
+static const float PascalsTriangle[4][4] = 
+    {
+    {1, -1, -1, -1 },
+    {1, 1, -1, -1},
+    {1, 2, 1, -1},
+    {1, 3, 3, 1 }
+};
+
+float Derivative(uint n, float x,
     float zmin,
     float zmax,
     float omin,
@@ -163,7 +171,6 @@ float DerivativeDivNFactorial(uint n, float x,
     
     float difference = 0;
     
-    float iFactorial = 1;
     for (uint i = 0; i <= n; i++)
     {
         float sign = -1;
@@ -171,9 +178,6 @@ float DerivativeDivNFactorial(uint n, float x,
         {
             sign = 1;
         }
-        
-        iFactorial *= max(i, 1);
-        float nMinusiFactorial = factorial(n - i);
         
         float foo = f(x + i * h,
             zmin,
@@ -186,7 +190,7 @@ float DerivativeDivNFactorial(uint n, float x,
             u
         );
         
-        difference += sign * foo / (iFactorial * nMinusiFactorial);
+        difference += sign * PascalsTriangle[n][i] * foo;
     }
 
     return difference / ZeroCutoff(pow(h, n), 0.0000001);
@@ -229,9 +233,12 @@ float TaylorSeriesAntiderivative(uint count, float evaluationPoint, float expans
         sigma,
         u) * evaluationPoint;
     
+    
+    float nFactorial = 1;
+    
     for (uint n = 1; n < count; n++)
     {
-        float derivative = DerivativeDivNFactorial(n, expansionPoint,
+        float derivative = Derivative(n, expansionPoint,
                 zmin,
                 zmax,
                 omin,
@@ -241,11 +248,13 @@ float TaylorSeriesAntiderivative(uint count, float evaluationPoint, float expans
                 sigma,
                 u);
         
+        nFactorial *= n;
+        
         float base = evaluationPoint - expansionPoint;
         
         float power = BetterPower(base, n + 1);
     
-        float denominator = (n + 1.f);
+        float denominator = (n + 1.f) * nFactorial;
         
         float multiplier = power / denominator;
         

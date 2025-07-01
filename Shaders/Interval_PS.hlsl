@@ -135,6 +135,33 @@ float IntegrateTaylorTransmittance(
         falloffRadius));
 }
 
+float IntegrateSimpsonTransmittance(
+    float3 minpoint,
+    float3 maxpoint,
+    float Zmin,
+    float Zmax,
+    float d,
+    float cosAlpha,
+    float extinction,
+    float falloffRadius
+)
+{
+    float Omin = SampleOpticalThickness(minpoint);
+    float Omax = SampleOpticalThickness(maxpoint);
+    
+    float Zmid = (Zmin + Zmax) / 2.f;
+    
+    float foo = 
+    f(Zmin,
+        Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius)
+    + 4 * f(Zmid,
+            Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius)
+    + f(Zmax,
+        Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius);
+    
+    return ((Zmax - Zmin) / 6.f) * foo;
+}
+
 float3 TaylorScatteredLight(
     float3 albedo,
     float3 irradiance,
@@ -156,6 +183,29 @@ float3 TaylorScatteredLight(
     float transmissionFactor = IntegrateTaylorTransmittance(minpoint, maxpoint, Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
 
     return albedo * phase * irradiance * 1 * transmissionFactor;
+}
+
+float3 SimpsonScatteredLight(
+    float3 albedo,
+    float3 irradiance,
+    float3 L,
+    float3 V,
+    float asymmetry,
+    float3 minpoint,
+    float3 maxpoint,
+    float Zmin,
+    float Zmax,
+    float d,
+    float cosAlpha,
+    float extinction,
+    float falloffRadius
+)
+{
+    float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
+    
+    float transmissionFactor = IntegrateSimpsonTransmittance(minpoint, maxpoint, Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
+
+    return albedo * phase * irradiance * transmissionFactor;
 }
 
 float3 Debug(float3 minpoint, float3 maxpoint)
@@ -263,6 +313,61 @@ void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
     }
 }
 
+void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
+    float3 minpoint,
+    float3 maxpoint,
+    float3 centrePos,
+    float extinction
+    )
+{
+    Cscat = 0.xxx;
+    Tv = 1;
+    
+    float Zmin = length(g_CameraPosition - minpoint);
+    float Zmax = length(g_CameraPosition - maxpoint);
+    
+    if (abs(Zmin - Zmax) < EPSILON)
+    {
+        return;
+    }
+    
+    float3 V = normalize(g_CameraPosition - minpoint);
+    float3 toCentre = normalize(centrePos - minpoint);
+    float d = length(centrePos - minpoint);
+    float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+    
+    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    
+    if (fadedExtinction > 0.00001)
+    {
+        Tv = FadedTransmittance(Zmin,
+                    Zmax,
+                    d,
+                    cosAlpha,
+                    extinction,
+                    g_ExtinctionFalloffRadius);
+        
+        float3 L = normalize(-g_LightDirection);
+        float3 R = g_LightBrightness * g_LightColor;
+        Cscat = SimpsonScatteredLight(
+                    g_Albedo,
+                    R, L, V,
+                    g_ScatteringAsymmetry,
+                    minpoint, maxpoint,
+                    Zmin,
+                    Zmax,
+                    d,
+                    cosAlpha,
+                    extinction,
+                    g_ExtinctionFalloffRadius);
+    
+        if (any(isnan(Cscat)))
+        {
+            Cscat = 0.xxx;
+        }
+    }
+}
+
 BlendOutput Interval_PS(VertexType input)
 {
     float4 maxpoint = float4(input.A.xy, input.A.z, 1.0);
@@ -296,9 +401,13 @@ BlendOutput Interval_PS(VertexType input)
     {
         ComputeVanillaEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);        
     }
-    else
+    else if (g_RenderingMethod == 1)
     {
         ComputeTaylorSeriesEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);        
+    }
+    else if (g_RenderingMethod == 2)
+    {
+        ComputeSimpsonEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);
     }
     
     ret.Color = float4(Cscat, Tv);

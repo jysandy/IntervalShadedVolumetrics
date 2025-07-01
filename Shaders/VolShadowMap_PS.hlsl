@@ -2,7 +2,16 @@
 #include "Utils.hlsli"
 
 
-float OpticalThickness(
+float VanillaOpticalThickness(
+    float3 minpoint,
+    float3 maxpoint,
+    float extinction
+)
+{
+    return length(minpoint - maxpoint) * extinction;
+}
+
+float FadedOpticalThickness(
     float3 minpoint,
     float3 maxpoint,
     float extinction,
@@ -34,11 +43,20 @@ float VolShadowMap_PS(VertexType input) : SV_Target
     float extinction = input.ExtinctionScale * g_Extinction / 100.f;
     extinction = max(EPSILON, extinction);
     
-    float tau = OpticalThickness(a.xyz,
+    float tau = 0;
+    
+    if (g_RenderingMethod == 0)
+    {
+        tau = VanillaOpticalThickness(a.xyz, b.xyz, extinction);
+    }
+    else
+    {
+        tau = FadedOpticalThickness(a.xyz,
                     b.xyz,
                     extinction,
                     input.WorldPosition,
                     g_ExtinctionFalloffRadius);
+    }
     
     return tau;
 }

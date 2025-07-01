@@ -68,6 +68,7 @@ public:
         float ExtinctionFalloffRadius = 1.f;
         float Scale = 3.f;
         float Anisotropy = 0.2f;
+        uint32_t RenderingMethod = 0;
     };
 
     struct __declspec(align(16)) InstanceData
@@ -200,6 +201,7 @@ private:
     bool m_guiDebugVolShadows = false;
 
     int m_guiParticleCount = 1000;
+    int m_guiRenderingMethod = 1;
 
     // Bullet shooting state
     bool m_didShoot = false;

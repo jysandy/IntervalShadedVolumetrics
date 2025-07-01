@@ -38,6 +38,7 @@ cbuffer Constants : register(b0, space0)
     float g_ExtinctionFalloffRadius;
     float g_Scale;
     float g_Anisotropy;
+    uint g_RenderingMethod;
 };
 
 struct InstanceData

@@ -46,7 +46,7 @@ float SampleOpticalThickness(float3 worldPosition)
     return VolumetricShadowMap.Sample(LinearSampler, uvw);
 }
 
-float Transmittance(float extinction, float opticalDepth)
+float VanillaTransmittance(float extinction, float opticalDepth)
 {
     return exp(-extinction * opticalDepth);
 }
@@ -63,12 +63,11 @@ float FadedTransmittance(
     return FadedTransmittanceTv2(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
 }
 
-float IntegrateTransmittance(
+float IntegrateVanillaTransmittance(
     float3 minpoint,
     float3 maxpoint,
     float extinction,
-    float3 centrePos,
-    float falloffRadius
+    float3 centrePos
 )
 {
     float Zmin = length(g_CameraPosition - minpoint);
@@ -92,7 +91,25 @@ float IntegrateTransmittance(
     return numerator / denominator;
 }
 
-float IntegrateFadedTransmittance(
+float3 VanillaScatteredLight(
+    float3 minpoint,
+    float3 maxpoint,
+    float extinction,
+    float3 centrePos,
+    float3 albedo,
+    float3 irradiance,
+    float3 L,
+    float3 V
+)
+{
+    float phase = WeightedPhase(L, V, g_ScatteringAsymmetry, g_Anisotropy);
+    
+    float transmissionFactor = IntegrateVanillaTransmittance(minpoint, maxpoint, extinction, centrePos);
+
+    return albedo * phase * irradiance * 1 * transmissionFactor;
+}
+
+float IntegrateTaylorTransmittance(
     float3 minpoint,
     float3 maxpoint,
     float Zmin,
@@ -118,7 +135,7 @@ float IntegrateFadedTransmittance(
         falloffRadius));
 }
 
-float3 ScatteredLight(
+float3 TaylorScatteredLight(
     float3 albedo,
     float3 irradiance,
     float3 L,
@@ -134,11 +151,9 @@ float3 ScatteredLight(
     float falloffRadius
 )
 {
-    float directionality = 0.2f;
     float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
     
-    float transmissionFactor = IntegrateFadedTransmittance(minpoint, maxpoint, Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
-    //float transmissionFactor = IntegrateTransmittance(minpoint, maxpoint, extinction, centrePos, falloffRadius);
+    float transmissionFactor = IntegrateTaylorTransmittance(minpoint, maxpoint, Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
 
     return albedo * phase * irradiance * 1 * transmissionFactor;
 }
@@ -159,10 +174,93 @@ float3 Debug(float3 minpoint, float3 maxpoint)
     if (transmittance > 1)
         return float3(0, 0, 1);
     
-    //return pow(1 - (od / 1000.f), 200).xxx;
-    
-    //return pow(saturate(transmittance), 10).xxx / 5.f;
     return pow(transmittance, 1).xxx * 0.1f;
+}
+
+void ComputeDebugEquation(out float3 Cscat, out float Tv,
+    float3 minpoint,
+    float3 maxpoint)
+{
+    Tv = 1;
+    Cscat = Debug(minpoint, maxpoint);
+}
+
+void ComputeVanillaEquation(out float3 Cscat, out float Tv,
+    float3 minpoint,
+    float3 maxpoint,
+    float3 centrePos,
+    float extinction
+    )
+{
+    float opticalDepth = length(minpoint - maxpoint);
+    
+    Tv = VanillaTransmittance(extinction, opticalDepth);
+    
+    float3 V = normalize(g_CameraPosition - minpoint);
+    float3 L = normalize(-g_LightDirection);
+    float3 R = g_LightBrightness * g_LightColor;
+    
+    Cscat = VanillaScatteredLight(minpoint, maxpoint, extinction, centrePos, g_Albedo, R, L, V);
+    
+    if (any(isnan(Cscat)))
+    {
+        Cscat = 0.xxx;
+    }
+}
+
+void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv, 
+    float3 minpoint,
+    float3 maxpoint,
+    float3 centrePos,
+    float extinction
+    )
+{
+    Cscat = 0.xxx;
+    Tv = 1;
+    
+    float Zmin = length(g_CameraPosition - minpoint);
+    float Zmax = length(g_CameraPosition - maxpoint);
+    
+    if (abs(Zmin - Zmax) < EPSILON)
+    {
+        return;
+    }
+    
+    float3 V = normalize(g_CameraPosition - minpoint);
+    float3 toCentre = normalize(centrePos - minpoint);
+    float d = length(centrePos - minpoint);
+    float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+    
+    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    
+    if (fadedExtinction > 0.00001)
+    {
+        Tv = FadedTransmittance(Zmin,
+                    Zmax,
+                    d,
+                    cosAlpha,
+                    extinction,
+                    g_ExtinctionFalloffRadius);
+        
+        float3 L = normalize(-g_LightDirection);
+        float3 R = g_LightBrightness * g_LightColor;
+        Cscat = TaylorScatteredLight(
+                    g_Albedo,
+                    R, L, V,
+                    g_ScatteringAsymmetry,
+                    minpoint, maxpoint,
+                    Zmin,
+                    Zmax,
+                    d,
+                    cosAlpha,
+                    extinction,
+                    g_ExtinctionFalloffRadius);
+    
+        if (any(isnan(Cscat)))
+        {
+            Cscat = 0.xxx;
+        }
+    }
 }
 
 BlendOutput Interval_PS(VertexType input)
@@ -188,55 +286,19 @@ BlendOutput Interval_PS(VertexType input)
     
     float3 Cscat = 0.xxx;
     float Tv = 1;
-    
-    float Zmin = length(g_CameraPosition - a.xyz);
-    float Zmax = length(g_CameraPosition - b.xyz);
-    
-    if (abs(Zmin - Zmax) < EPSILON)
-    {
-        ret.Color = float4(0, 0, 0, 1);
-        return ret;
-    }
-    
-    float3 V = normalize(g_CameraPosition - a.xyz);
-    float3 toCentre = normalize(input.WorldPosition - a.xyz);
-    float d = length(input.WorldPosition - a.xyz);
-    float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
-    
-    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
 
     if (g_DebugVolShadows > 0)
     {
         Cscat = Debug(a.xyz, b.xyz);
         Tv = 1;
     }
-    else if (fadedExtinction > 0.00001)
+    else if (g_RenderingMethod == 0)
     {
-        Tv = FadedTransmittance(Zmin,
-                    Zmax,
-                    d,
-                    cosAlpha,
-                    extinction,
-                    g_ExtinctionFalloffRadius);
-        
-        float3 L = normalize(-g_LightDirection);
-        float3 R = g_LightBrightness * g_LightColor;
-        Cscat = ScatteredLight(
-                    g_Albedo,
-                    R, L, V,
-                    g_ScatteringAsymmetry,
-                    a.xyz, b.xyz,
-                    Zmin,
-                    Zmax,
-                    d,
-                    cosAlpha,
-                    extinction,
-                    g_ExtinctionFalloffRadius);
-    
-        if (any(isnan(Cscat)))
-        {
-            Cscat = 0.xxx;
-        }
+        ComputeVanillaEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);        
+    }
+    else
+    {
+        ComputeTaylorSeriesEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);        
     }
     
     ret.Color = float4(Cscat, Tv);

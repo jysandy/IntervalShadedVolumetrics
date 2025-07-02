@@ -40,7 +40,7 @@ float VolShadowMap_PS(VertexType input) : SV_Target
     a = a / a.w;
     b = b / b.w;
 
-    float extinction = input.ExtinctionScale * g_Extinction / 100.f;
+    float extinction = input.ExtinctionScale * g_Extinction / 1000.f;
     extinction = max(EPSILON, extinction);
     
     float tau = 0;

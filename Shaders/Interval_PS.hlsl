@@ -162,6 +162,40 @@ float IntegrateSimpsonTransmittance(
     return ((Zmax - Zmin) / 6.f) * foo;
 }
 
+float IntegrateSimpsonTransmittanceRayMarch(
+    float3 minpoint,
+    float3 maxpoint,
+    float Zmin,
+    float Zmax,
+    float3 centrePos,
+    float extinction,
+    float falloffRadius
+)
+{
+    float integral = 0;
+    
+    int count = 1;
+    float stepSize = (Zmax - Zmin) / (float) count;
+    float3 stepDir = normalize(maxpoint - minpoint);
+    for (int i = 0; i < count; i++)
+    {
+        float3 start = minpoint + i * stepSize * stepDir;
+        float3 end = minpoint + (i + 1) * stepSize * stepDir;
+        
+        float minZ = Zmin + i * stepSize;
+        float maxZ = Zmin + (i + 1) * stepSize;
+
+        float3 V = normalize(g_CameraPosition - start);
+        float3 toCentre = normalize(centrePos - start);
+        float d = length(centrePos - start);
+        float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+        
+        integral += IntegrateSimpsonTransmittance(start, end, minZ, maxZ, d, cosAlpha, extinction, falloffRadius);
+    }
+
+    return integral;
+}
+
 float3 TaylorScatteredLight(
     float3 albedo,
     float3 irradiance,
@@ -195,15 +229,14 @@ float3 SimpsonScatteredLight(
     float3 maxpoint,
     float Zmin,
     float Zmax,
-    float d,
-    float cosAlpha,
+    float3 centrePos,
     float extinction,
     float falloffRadius
 )
 {
     float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
     
-    float transmissionFactor = IntegrateSimpsonTransmittance(minpoint, maxpoint, Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
+    float transmissionFactor = IntegrateSimpsonTransmittanceRayMarch(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius);
 
     return albedo * phase * irradiance * transmissionFactor;
 }
@@ -283,7 +316,7 @@ void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
     
     float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     
-    if (fadedExtinction > 0.00001)
+    if (fadedExtinction > 0)
     {
         Tv = FadedTransmittance(Zmin,
                     Zmax,
@@ -338,7 +371,7 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
     
     float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     
-    if (fadedExtinction > 0.00001)
+    if (fadedExtinction > 0.0)
     {
         Tv = FadedTransmittance(Zmin,
                     Zmax,
@@ -356,8 +389,7 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
                     minpoint, maxpoint,
                     Zmin,
                     Zmax,
-                    d,
-                    cosAlpha,
+                    centrePos,
                     extinction,
                     g_ExtinctionFalloffRadius);
     
@@ -386,7 +418,7 @@ BlendOutput Interval_PS(VertexType input)
     reprojected /= reprojected.w;
     ret.Depth = reprojected.z;
     
-    float extinction = input.ExtinctionScale * g_Extinction / 100.f;
+    float extinction = input.ExtinctionScale * g_Extinction / 1000.f;
     extinction = max(EPSILON, extinction);
     
     float3 Cscat = 0.xxx;

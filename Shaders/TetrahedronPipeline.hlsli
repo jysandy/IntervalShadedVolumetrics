@@ -61,8 +61,8 @@ struct VertexType
     // TODO: Rename this to something reasonable
     float4 A : POSITION1;
     
-    float ExtinctionScale : EXTINCTION;
-    float3 WorldPosition : WORLDPOS;
+    nointerpolation float ExtinctionScale : EXTINCTION;
+    nointerpolation float3 WorldPosition : WORLDPOS;
 };
 
 #endif

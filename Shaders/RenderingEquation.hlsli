@@ -71,17 +71,17 @@ float FadedOpticalThickness(
     float u
 )
 {
-    float sigma2 = sigma * sigma;
     float d2 = d * d;
     float u2 = u * u;
     
-    float prefix = sigma * 0.1 * sqrt(5 * PI) * u;
+    float prefix = sigma * 0.2 * sqrt(2 * PI) * u;
     
     float root5 = sqrt(5);
+    float fiveRoot2 = 5 * sqrt(2);
     
-    float firstExp = root5 * d * cosAlpha / u;
-    float secondExp = root5 * (d * cosAlpha - z + zmin) / u;
-    float thirdExp = (5 * d2 * cosAlpha * cosAlpha - 5 * d2) / u2;
+    float firstExp = fiveRoot2 * d * cosAlpha / u;
+    float secondExp = fiveRoot2 * (d * cosAlpha - z + zmin) / u;
+    float thirdExp = (50 * d2 * cosAlpha * cosAlpha - 50 * d2) / u2;
     
     return prefix * (erf(firstExp) - erf(secondExp)) * exp(thirdExp);
 }
@@ -111,10 +111,12 @@ float Sigma_t(
     float zMinusZmin2 = zMinusZmin * zMinusZmin;
     
     float numerator
-        = 5 * (2 * d * zMinusZmin * cosAlpha - d * d - zMinusZmin2);
+        = 50 * (2 * d * zMinusZmin * cosAlpha - d * d - zMinusZmin2);
     float exponent = numerator / (u * u);
     
-    return sigma * exp(exponent);
+    float extinction = sigma * exp(exponent);
+    
+    return extinction;
 }
 
 float T_L(

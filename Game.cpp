@@ -339,7 +339,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Scale", &m_guiScale, 0.01, 30);
         ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
         ImGui::SliderFloat("Extinction", &m_guiExtinction, 0, 30);
-        ImGui::SliderFloat("Extinction Falloff", &m_guiExtinctionFalloffFactor, 0, 1);
+        ImGui::SliderFloat("Extinction Falloff", &m_guiExtinctionFalloffFactor, 0, 10);
         ImGui::SliderFloat("Scattering Anisotropy", &m_guiAnisotropy, 0, 1);
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
         const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)"};

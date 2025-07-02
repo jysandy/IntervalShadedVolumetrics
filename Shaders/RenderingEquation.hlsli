@@ -83,7 +83,13 @@ float FadedOpticalThickness(
     float secondExp = fiveRoot2 * (d * cosAlpha - z + zmin) / u;
     float thirdExp = (50 * d2 * cosAlpha * cosAlpha - 50 * d2) / u2;
     
-    return prefix * (erf(firstExp) - erf(secondExp)) * exp(thirdExp);
+    float ot = prefix * (erf(firstExp) - erf(secondExp)) * exp(thirdExp);
+    if (ot < 0.0005)
+    {
+        return 0;
+    }
+    
+    return ot;
 }
 
 float FadedTransmittanceTv2(
@@ -115,6 +121,11 @@ float Sigma_t(
     float exponent = numerator / (u * u);
     
     float extinction = sigma * exp(exponent);
+    
+    if (extinction < 0.0005)
+    {
+        return 0;
+    }
     
     return extinction;
 }

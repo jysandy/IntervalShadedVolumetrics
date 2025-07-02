@@ -56,7 +56,7 @@ Game::Game() noexcept(false)
         2,
         D3D_FEATURE_LEVEL_12_2,
         DX::DeviceResources::c_AllowTearing
-        //| DX::DeviceResources::c_EnableHDR
+        | DX::DeviceResources::c_EnableHDR
     );
     // TODO: Provide parameters for swapchain format, depth/stencil format, and backbuffer count.
     //   Add DX::DeviceResources::c_AllowTearing to opt-in to variable rate displays.

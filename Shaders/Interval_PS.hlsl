@@ -74,7 +74,7 @@ float IntegrateVanillaTransmittance(
     float Zmax = length(g_CameraPosition - maxpoint);
     
     float Omin = SampleOpticalThickness(minpoint);
-    float Omax = SampleOpticalThickness(maxpoint);    
+    float Omax = SampleOpticalThickness(maxpoint);
     
     float denominator = ZeroCutoff(Omax - Omin + extinction * (Zmax - Zmin), EPSILON);
     
@@ -82,7 +82,7 @@ float IntegrateVanillaTransmittance(
     float secondExponent = extinction * Zmin + Omin;
     float thirdExponent = -extinction * Zmax - Omax - Omin;
     
-    float numerator 
+    float numerator
         = extinction * (Zmin - Zmax) * (exp(firstExponent) - exp(secondExponent)) * exp(thirdExponent);
     
     // Output must be non-negative
@@ -151,7 +151,7 @@ float IntegrateSimpsonTransmittance(
     
     float Zmid = (Zmin + Zmax) / 2.f;
     
-    float foo = 
+    float foo =
     f(Zmin,
         Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius)
     + 4 * f(Zmid,
@@ -241,31 +241,35 @@ float3 SimpsonScatteredLight(
     return albedo * phase * irradiance * transmissionFactor;
 }
 
-float3 Debug(float3 minpoint, float3 maxpoint)
+void ComputeDebugEquation(out float3 Cscat, out float Tv,
+    float3 minpoint,
+    float3 maxpoint)
 {
+    Cscat = 0.xxx;
+    Tv = 1;
+    
+    
     float3 avg = (minpoint + maxpoint) / 2.f;
     
     float od = SampleOpticalThickness(avg);
     
     if (od < 0)
     {
-        return float3(0, 0, 1);
+        Cscat = float3(0, 0, 1);
+        return;
     }
     
     float transmittance = exp(-od);
     
     if (transmittance > 1)
-        return float3(0, 0, 1);
+    {
+        Cscat = float3(0, 0, 1);
+        return;
+    }
     
-    return pow(transmittance, 1).xxx * 0.1f;
-}
-
-void ComputeDebugEquation(out float3 Cscat, out float Tv,
-    float3 minpoint,
-    float3 maxpoint)
-{
-    Tv = 1;
-    Cscat = Debug(minpoint, maxpoint);
+    Tv = 1 - pow(1 - transmittance, 30);
+    
+    Tv = lerp(0.95, 1, Tv);
 }
 
 void ComputeVanillaEquation(out float3 Cscat, out float Tv,
@@ -291,7 +295,7 @@ void ComputeVanillaEquation(out float3 Cscat, out float Tv,
     }
 }
 
-void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv, 
+void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
     float3 minpoint,
     float3 maxpoint,
     float3 centrePos,
@@ -426,16 +430,15 @@ BlendOutput Interval_PS(VertexType input)
 
     if (g_DebugVolShadows > 0)
     {
-        Cscat = Debug(a.xyz, b.xyz);
-        Tv = 1;
+        ComputeDebugEquation(Cscat, Tv, a.xyz, b.xyz);
     }
     else if (g_RenderingMethod == 0)
     {
-        ComputeVanillaEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);        
+        ComputeVanillaEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);
     }
     else if (g_RenderingMethod == 1)
     {
-        ComputeTaylorSeriesEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);        
+        ComputeTaylorSeriesEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);
     }
     else if (g_RenderingMethod == 2)
     {

@@ -418,7 +418,7 @@ BlendOutput Interval_PS(VertexType input)
     reprojected /= reprojected.w;
     ret.Depth = reprojected.z;
     
-    float extinction = input.ExtinctionScale * g_Extinction / 1000.f;
+    float extinction = input.ExtinctionScale * g_Extinction * EXTINCTION_SCALE;
     extinction = max(EPSILON, extinction);
     
     float3 Cscat = 0.xxx;

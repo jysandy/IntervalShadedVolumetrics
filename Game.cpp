@@ -338,7 +338,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderInt("Particle Count", &m_guiParticleCount, 1, MaxParticles);
         ImGui::SliderFloat("Scale", &m_guiScale, 0.01, 30);
         ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
-        ImGui::SliderFloat("Extinction", &m_guiExtinction, 0, 30);
+        ImGui::SliderFloat("Extinction", &m_guiExtinction, 0, 100);
         ImGui::SliderFloat("Extinction Falloff", &m_guiExtinctionFalloffFactor, 0, 10);
         ImGui::SliderFloat("Scattering Anisotropy", &m_guiAnisotropy, 0, 1);
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
@@ -446,7 +446,7 @@ void Game::Render()
     constants.Albedo = m_guiAlbedo;
     constants.Extinction = m_guiExtinction;
     constants.CameraPosition = m_camera.GetCamera().GetPosition();
-    constants.LightBrightness = m_guiLightBrightness * BrightnessScale;
+    constants.LightBrightness = m_guiLightBrightness * BrightnessScale * 10;
     constants.LightDirection = lightDirection;
     constants.ScatteringAsymmetry = m_guiScatteringAsymmetry;
     constants.LightColor = m_guiLightColor;

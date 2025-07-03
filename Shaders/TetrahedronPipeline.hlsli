@@ -65,4 +65,6 @@ struct VertexType
     nointerpolation float3 WorldPosition : WORLDPOS;
 };
 
+static const float EXTINCTION_SCALE = 1 / 10000.f;
+
 #endif

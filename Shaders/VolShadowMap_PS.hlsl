@@ -45,6 +45,7 @@ float VolShadowMap_PS(VertexType input) : SV_Target
     
     float tau = 0;
     
+    [branch]
     if (g_RenderingMethod == 0)
     {
         tau = VanillaOpticalThickness(a.xyz, b.xyz, extinction);

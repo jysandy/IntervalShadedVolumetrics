@@ -428,6 +428,7 @@ BlendOutput Interval_PS(VertexType input)
     float3 Cscat = 0.xxx;
     float Tv = 1;
 
+    [branch]
     if (g_DebugVolShadows > 0)
     {
         ComputeDebugEquation(Cscat, Tv, a.xyz, b.xyz);

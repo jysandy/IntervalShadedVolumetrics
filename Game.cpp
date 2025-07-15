@@ -154,7 +154,7 @@ void Game::Update(DX::StepTimer const& timer)
     auto time = static_cast<float>(timer.GetTotalSeconds());
 
     m_sphereWorld = Matrix::CreateScale({ 1, 1, 1 })
-        * Matrix::CreateTranslation({ 0, -5.f, 0 });
+        * Matrix::CreateTranslation({ 0, 0.f, 0 });
 
     m_floorWorld = Matrix::CreateScale({ 50, 0.5, 50 })
         * Matrix::CreateTranslation({ 0, -10.f, 0 });

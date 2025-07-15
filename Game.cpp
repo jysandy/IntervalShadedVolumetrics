@@ -266,6 +266,8 @@ void Game::RenderProps(ID3D12GraphicsCommandList6* cl,
     m_propPipeline->CameraPosition = m_camera.GetCamera().GetPosition();
     m_propPipeline->ShadowMap = m_shadowMap->GetShadowMapSRV();
     m_propPipeline->ShadowTransform = m_shadowMap->GetShadowTransform();
+    m_propPipeline->VolumetricShadowTransform = m_volShadowMap->GetShadowTransform();
+    m_propPipeline->VolumetricShadowMap = m_volShadowMap->TransitionAndGetSRV(cl);
 
     m_propPipeline->Apply(cl, true);
     auto bm = Gradient::BufferManager::Get();
@@ -719,13 +721,13 @@ void Game::CreateDeviceDependentResources()
     auto bm = Gradient::BufferManager::Get();
 
     m_floor = bm->CreateBox(device, cq, { 1, 1, 1 });
-    m_box = bm->CreateBox(device, cq, {3, 3, 3});
+    m_box = bm->CreateBox(device, cq, { 3, 3, 3 });
 
     m_states = std::make_unique<DirectX::CommonStates>(device);
 
     m_volShadowMap = std::make_unique<ISV::VolShadowMap>(device, 30.f);
-    m_shadowMap = std::make_unique<ISV::ShadowMap>(device, 
-        Vector3{ 1, 1, 1 }, 
+    m_shadowMap = std::make_unique<ISV::ShadowMap>(device,
+        Vector3{ 1, 1, 1 },
         50.f);
 
     RenderTargetState backBufferRTState(m_deviceResources->GetBackBufferFormat(),

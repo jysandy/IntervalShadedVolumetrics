@@ -25,7 +25,7 @@ namespace ISV
             10 * sceneRadius
         );
 
-        const float shadowMapWidth = 1024.f;
+        const float shadowMapWidth = 2048.f;
         m_width = shadowMapWidth;
 
         m_shadowMapViewport = {

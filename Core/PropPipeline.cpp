@@ -16,6 +16,14 @@ namespace ISV
     {
         m_rootSignature.AddCBV(0, 0); // constants
         m_rootSignature.AddSRV(0, 0); // shadow map
+        m_rootSignature.AddSRV(1, 0); // volumetric shadow map
+
+        m_rootSignature.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(0,
+            D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+            D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
+            0, 0);
 
         m_rootSignature.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(1,
             D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
@@ -25,7 +33,7 @@ namespace ISV
             0,
             1,
             D3D12_COMPARISON_FUNC_LESS_EQUAL),
-            0,
+            1,
             0);
 
         m_rootSignature.Build(device);
@@ -76,9 +84,11 @@ namespace ISV
         constants.CameraPosition = CameraPosition;
         constants.Light = Light;
         constants.ShadowTransform = ShadowTransform.Transpose();
+        constants.VolumetricShadowTransform = VolumetricShadowTransform.Transpose();
 
         m_rootSignature.SetCBV(cl, 0, 0, constants); 
         m_rootSignature.SetSRV(cl, 0, 0, ShadowMap);
+        m_rootSignature.SetSRV(cl, 1, 0, VolumetricShadowMap);
 
 
         cl->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

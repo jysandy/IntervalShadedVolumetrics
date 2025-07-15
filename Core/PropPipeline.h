@@ -26,6 +26,7 @@ namespace ISV
             DirectX::XMMATRIX WorldViewProj;
             DirectionalLight Light;
             DirectX::XMMATRIX ShadowTransform;
+            DirectX::XMMATRIX VolumetricShadowTransform;
             DirectX::XMFLOAT3 CameraPosition;
             float Pad;
         };
@@ -41,10 +42,12 @@ namespace ISV
         void ApplyShadows(ID3D12GraphicsCommandList* cl);
 
         Gradient::GraphicsMemoryManager::DescriptorView ShadowMap;
+        Gradient::GraphicsMemoryManager::DescriptorView VolumetricShadowMap;
         DirectX::SimpleMath::Matrix World;
         DirectX::SimpleMath::Matrix View;
         DirectX::SimpleMath::Matrix Proj;
         DirectX::SimpleMath::Matrix ShadowTransform;
+        DirectX::SimpleMath::Matrix VolumetricShadowTransform;
         DirectX::SimpleMath::Vector3 CameraPosition;
         DirectionalLight Light;
 

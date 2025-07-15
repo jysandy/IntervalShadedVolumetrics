@@ -153,6 +153,12 @@ void Game::Update(DX::StepTimer const& timer)
 
     auto time = static_cast<float>(timer.GetTotalSeconds());
 
+    m_sphereWorld = Matrix::CreateScale({ 1, 1, 1 })
+        * Matrix::CreateTranslation({ 0, -5.f, 0 });
+
+    m_floorWorld = Matrix::CreateScale({ 50, 0.5, 50 })
+        * Matrix::CreateTranslation({ 0, -10.f, 0 });
+
     PIXEndEvent();
 }
 #pragma endregion
@@ -221,29 +227,49 @@ void Game::DispatchParallelSort(ID3D12GraphicsCommandList6* cl,
     ThrowIfFfxFailed(ffxParallelSortContextDispatch(&m_parallelSortContext, &dispatchDesc));
 }
 
+void Game::RenderPropShadows(ID3D12GraphicsCommandList6* cl,
+    Vector3 normalizedLightDirection)
+{
+    m_shadowMap->SetLightDirection(normalizedLightDirection);
+
+    m_propPipeline->World = m_sphereWorld;
+    m_propPipeline->View = m_shadowMap->GetView();
+    m_propPipeline->Proj = m_shadowMap->GetProjection();
+
+    m_propPipeline->ApplyShadows(cl);
+    m_shadowMap->ClearAndSetDSV(cl);
+
+    auto bm = Gradient::BufferManager::Get();
+    auto mesh = bm->GetMesh(m_sphere);
+    mesh->Draw(cl);
+
+    m_propPipeline->World = m_floorWorld;
+    m_propPipeline->ApplyShadows(cl);
+    mesh = bm->GetMesh(m_floor);
+    mesh->Draw(cl);
+}
+
 void Game::RenderProps(ID3D12GraphicsCommandList6* cl,
     Vector3 normalizedLightDirection)
 {
-    auto world = Matrix::CreateScale({ 1, 1, 1 })
-        * Matrix::CreateTranslation({ 0, -5.f, 0 });
+    m_shadowMap->TransitionToShaderResource(cl);
 
-    m_propPipeline->World = world;
+    m_propPipeline->World = m_sphereWorld;
     m_propPipeline->View = m_camera.GetCamera().GetViewMatrix();
     m_propPipeline->Proj = m_camera.GetCamera().GetProjectionMatrix();
     m_propPipeline->Light.Color = m_guiLightColor;
     m_propPipeline->Light.Strength = m_guiLightBrightness * BrightnessScale;
     m_propPipeline->Light.Direction = normalizedLightDirection;
     m_propPipeline->CameraPosition = m_camera.GetCamera().GetPosition();
+    m_propPipeline->ShadowMap = m_shadowMap->GetShadowMapSRV();
+    m_propPipeline->ShadowTransform = m_shadowMap->GetShadowTransform();
 
     m_propPipeline->Apply(cl, true);
     auto bm = Gradient::BufferManager::Get();
     auto mesh = bm->GetMesh(m_sphere);
     mesh->Draw(cl);
 
-    world = Matrix::CreateScale({ 50, 0.5, 50 })
-        * Matrix::CreateTranslation({ 0, -10.f, 0 });
-
-    m_propPipeline->World = world;
+    m_propPipeline->World = m_floorWorld;
     m_propPipeline->Apply(cl, true);
     mesh = bm->GetMesh(m_floor);
     mesh->Draw(cl);
@@ -345,7 +371,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Extinction Falloff", &m_guiExtinctionFalloffFactor, 0, 10);
         ImGui::SliderFloat("Scattering Anisotropy", &m_guiAnisotropy, 0, 1);
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
-        const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)"};
+        const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)" };
         ImGui::Combo("Rendering Method", &m_guiRenderingMethod, items, IM_ARRAYSIZE(items));
 
         ImGui::TreePop();
@@ -489,6 +515,12 @@ void Game::Render()
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Volumetric shadow rendering");
 
     RenderVolumetricShadows(cl, constants);
+
+    PIXEndEvent(cl);
+
+    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Shadow map");
+
+    RenderPropShadows(cl, lightDirection);
 
     PIXEndEvent(cl);
 
@@ -687,6 +719,9 @@ void Game::CreateDeviceDependentResources()
     m_states = std::make_unique<DirectX::CommonStates>(device);
 
     m_volShadowMap = std::make_unique<ISV::VolShadowMap>(device, 30.f);
+    m_shadowMap = std::make_unique<ISV::ShadowMap>(device, 
+        Vector3{ 1, 1, 1 }, 
+        50.f);
 
     RenderTargetState backBufferRTState(m_deviceResources->GetBackBufferFormat(),
         m_deviceResources->GetDepthBufferFormat());

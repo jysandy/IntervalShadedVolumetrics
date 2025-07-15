@@ -25,6 +25,7 @@ namespace ISV
             DirectX::XMMATRIX World;
             DirectX::XMMATRIX WorldViewProj;
             DirectionalLight Light;
+            DirectX::XMMATRIX ShadowTransform;
             DirectX::XMFLOAT3 CameraPosition;
             float Pad;
         };
@@ -37,6 +38,8 @@ namespace ISV
         void Apply(ID3D12GraphicsCommandList* cl,
             bool multisampled = true);
 
+        void ApplyShadows(ID3D12GraphicsCommandList* cl);
+
         Gradient::GraphicsMemoryManager::DescriptorView ShadowMap;
         DirectX::SimpleMath::Matrix World;
         DirectX::SimpleMath::Matrix View;
@@ -47,7 +50,7 @@ namespace ISV
 
     private:
         void InitializeRootSignature(ID3D12Device* device);
-        //void InitializeShadowPSO(ID3D12Device2* device);
+        void InitializeShadowPSO(ID3D12Device2* device);
         void InitializeRenderPSO(ID3D12Device2* device);
 
         Gradient::RootSignature m_rootSignature;

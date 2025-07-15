@@ -309,6 +309,7 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Core\PropPipeline.h" />
+    <ClInclude Include="Core\ShadowMap.h" />
     <ClInclude Include="Core\VolShadowMap.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Gradient\BarrierResource.h" />
@@ -333,6 +334,7 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\PropPipeline.cpp" />
+    <ClCompile Include="Core\ShadowMap.cpp" />
     <ClCompile Include="Core\VolShadowMap.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Gradient\BarrierResource.cpp" />

@@ -36,6 +36,7 @@
     <ClInclude Include="Gradient\Rendering\TextureDrawer.h" />
     <ClInclude Include="Core\VolShadowMap.h" />
     <ClInclude Include="Core\PropPipeline.h" />
+    <ClInclude Include="Core\ShadowMap.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -58,6 +59,7 @@
     <ClCompile Include="Gradient\Rendering\TextureDrawer.cpp" />
     <ClCompile Include="Core\VolShadowMap.cpp" />
     <ClCompile Include="Core\PropPipeline.cpp" />
+    <ClCompile Include="Core\ShadowMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

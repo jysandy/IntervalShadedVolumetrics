@@ -25,6 +25,7 @@
 #include "Gradient/RootSignature.h"
 #include "Gradient/BufferManager.h"
 #include "Core/VolShadowMap.h"
+#include "Core/ShadowMap.h"
 #include "Core/PropPipeline.h"
 
 
@@ -135,6 +136,8 @@ private:
     void DispatchParallelSort(ID3D12GraphicsCommandList6* cl,
         Gradient::BufferManager::InstanceBufferEntry* keys,
         Gradient::BufferManager::InstanceBufferEntry* payload);
+    void RenderPropShadows(ID3D12GraphicsCommandList6* cl,
+        DirectX::SimpleMath::Vector3 lightDirection);
     void RenderProps(ID3D12GraphicsCommandList6* cl, 
         DirectX::SimpleMath::Vector3 lightDirection);
     void RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
@@ -159,6 +162,9 @@ private:
     Gradient::BufferManager::MeshHandle m_floor;
     Gradient::BufferManager::MeshHandle m_sphere;
 
+    DirectX::SimpleMath::Matrix m_sphereWorld;
+    DirectX::SimpleMath::Matrix m_floorWorld;
+
     std::unique_ptr<ISV::PropPipeline> m_propPipeline;
 
     std::unique_ptr<Gradient::Rendering::RenderTexture> m_renderTarget;
@@ -171,6 +177,7 @@ private:
     Gradient::GraphicsMemoryManager::DescriptorView m_tetKeysUAV;
     Gradient::GraphicsMemoryManager::DescriptorView m_tetIndicesUAV;
 
+    std::unique_ptr<ISV::ShadowMap> m_shadowMap;
     std::unique_ptr<ISV::VolShadowMap> m_volShadowMap;
 
     Gradient::RootSignature m_tetRS;

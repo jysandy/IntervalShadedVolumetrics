@@ -15,6 +15,7 @@ cbuffer Constants : register(b0, space0)
     float4x4 g_World;
     float4x4 g_WorldViewProj;
     DirectionalLight g_DirectionalLight;
+    float4x4 g_ShadowTransform;
     float3 g_CameraPosition;
     float g_Pad;
 };

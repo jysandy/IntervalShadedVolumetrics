@@ -1,10 +1,13 @@
 #include "Utils.hlsli"
 #include "TetrahedronPipeline.hlsli"
 #include "RenderingEquation.hlsli"
+#include "ShadowMapping.hlsli"
 
 Texture3D<float> VolumetricShadowMap : register(t2, space0);
+Texture2D ShadowMap : register(t3, space0);
 
 SamplerState LinearSampler : register(s0, space0);
+SamplerComparisonState ShadowMapSampler : register(s1, space0);
 
 struct BlendOutput
 {
@@ -35,7 +38,7 @@ float WeightedPhase(float3 L, float3 V, float asymmetry, float directionality)
 
 float SampleOpticalThickness(float3 worldPosition)
 {
-    float4 transformed = mul(float4(worldPosition, 1), g_ShadowTransform);
+    float4 transformed = mul(float4(worldPosition, 1), g_VolumetricShadowTransform);
     
     transformed /= transformed.w;
     float3 uvw = transformed.xyz;
@@ -135,6 +138,13 @@ float IntegrateTaylorTransmittance(
         falloffRadius));
 }
 
+float Visibility(float3 worldPosition)
+{
+    return calculateShadowFactorNoLargeKernel(ShadowMap, 
+        ShadowMapSampler, 
+        g_ShadowTransform, worldPosition);
+}
+
 float IntegrateSimpsonTransmittance(
     float3 minpoint,
     float3 maxpoint,
@@ -153,11 +163,14 @@ float IntegrateSimpsonTransmittance(
     
     float foo =
     f(Zmin,
-        Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius)
+      Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius, 
+      Visibility(minpoint))
     + 4 * f(Zmid,
-            Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius)
+            Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius, 
+            Visibility((minpoint + maxpoint) / 2.f))
     + f(Zmax,
-        Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius);
+        Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius, 
+        Visibility(maxpoint));
     
     return ((Zmax - Zmin) / 6.f) * foo;
 }

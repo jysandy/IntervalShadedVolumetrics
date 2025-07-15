@@ -10,6 +10,7 @@ cbuffer Constants : register(b0, space0)
     float4x4 view;
     float4x4 persp;
     float4x4 g_InverseViewProj;
+    float4x4 g_VolumetricShadowTransform;
     float4x4 g_ShadowTransform;
     float4 g_CullingFrustumPlanes[6];
     

@@ -43,6 +43,7 @@ public:
         DirectX::XMMATRIX View;
         DirectX::XMMATRIX Proj;
         DirectX::XMMATRIX InverseViewProj;
+        DirectX::XMMATRIX VolumetricShadowTransform;
         DirectX::XMMATRIX ShadowTransform;
         DirectX::XMFLOAT4 CullingFrustumPlanes[6];
         float NearPlane;

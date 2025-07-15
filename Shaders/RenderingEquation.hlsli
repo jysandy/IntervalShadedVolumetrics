@@ -153,13 +153,14 @@ float f(float x,
     float d,
     float cosAlpha,
     float sigma,
-    float u)
+    float u,
+    float visibility)
 {
     float t_v = FadedTransmittanceTv2(zmin, x, d, cosAlpha, sigma, u);
     float sigma_t = Sigma_t(zmin, x, d, cosAlpha, sigma, u);
     float t_l = T_L(zmin, x, zmax, omin, omax);
 
-    return t_v * sigma_t * t_l;
+    return t_v * sigma_t * t_l * visibility;
 }
 
 static const float PascalsTriangle[4][4] = 
@@ -200,7 +201,8 @@ float Derivative(uint n, float x,
             d,
             cosAlpha,
             sigma,
-            u
+            u,
+            1 // TODO: pass visibility through
         );
         
         difference += sign * PascalsTriangle[n][i] * foo;
@@ -244,7 +246,9 @@ float TaylorSeriesAntiderivative(uint count, float evaluationPoint, float expans
         d,
         cosAlpha,
         sigma,
-        u) * evaluationPoint;
+        u,
+        1 // TODO: pass visibility through    
+        ) * evaluationPoint;
     
     
     float nFactorial = 1;
@@ -295,7 +299,9 @@ void TaylorSeriesCoefficients(out float coefficients[5], uint count, float expan
         d,
         cosAlpha,
         sigma,
-        u);
+        u,
+        1 // TODO: pass visibility through
+        );
     
     
     float nFactorial = 1;

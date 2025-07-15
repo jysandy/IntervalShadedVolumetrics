@@ -153,7 +153,7 @@ void Game::Update(DX::StepTimer const& timer)
 
     auto time = static_cast<float>(timer.GetTotalSeconds());
 
-    m_sphereWorld = Matrix::CreateScale({ 1, 1, 1 })
+    m_sphereWorld = Matrix::CreateScale({ 3, 3, 3 })
         * Matrix::CreateTranslation({ 0, 0.f, 0 });
 
     m_floorWorld = Matrix::CreateScale({ 50, 0.5, 50 })
@@ -292,6 +292,7 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
     m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
     m_tetRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
     m_tetRS.SetSRV(cl, 2, 0, m_volShadowMap->TransitionAndGetSRV(cl));
+    m_tetRS.SetSRV(cl, 3, 0, m_shadowMap->GetShadowMapSRV());
 
     cl->DispatchMesh(
         Gradient::Math::DivRoundUp(
@@ -490,7 +491,8 @@ void Game::Render()
     constants.RenderingMethod = m_guiRenderingMethod;
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
-    constants.ShadowTransform = m_volShadowMap->GetShadowTransform().Transpose();
+    constants.VolumetricShadowTransform = m_volShadowMap->GetShadowTransform().Transpose();
+    constants.ShadowTransform = m_shadowMap->GetShadowTransform().Transpose();
 
     if (m_didShoot)
     {
@@ -774,6 +776,7 @@ void Game::CreateDeviceDependentResources()
     m_tetRS.AddRootSRV(0, 0);   // instances
     m_tetRS.AddRootSRV(1, 0);   // indices
     m_tetRS.AddSRV(2, 0);       // volumetric shadow map
+    m_tetRS.AddSRV(3, 0);       // regular shadow map
 
     m_tetRS.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(0,
         D3D12_FILTER_MIN_MAG_MIP_LINEAR,
@@ -781,6 +784,17 @@ void Game::CreateDeviceDependentResources()
         D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
         D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
         0, 0);
+
+    m_tetRS.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(1,
+        D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
+        D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+        D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+        D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+        0,
+        1,
+        D3D12_COMPARISON_FUNC_LESS_EQUAL),
+        1,
+        0);
 
     m_tetRS.Build(device);
 

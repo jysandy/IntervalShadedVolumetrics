@@ -35,6 +35,7 @@
     <ClInclude Include="Gradient\Rendering\RenderTexture.h" />
     <ClInclude Include="Gradient\Rendering\TextureDrawer.h" />
     <ClInclude Include="Core\VolShadowMap.h" />
+    <ClInclude Include="Core\PropPipeline.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -56,6 +57,7 @@
     <ClCompile Include="Gradient\Rendering\RenderTexture.cpp" />
     <ClCompile Include="Gradient\Rendering\TextureDrawer.cpp" />
     <ClCompile Include="Core\VolShadowMap.cpp" />
+    <ClCompile Include="Core\PropPipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -83,6 +85,11 @@
     <None Include="Shaders\Culling.hlsli" />
     <None Include="Shaders\RenderingEquation.hlsli" />
     <None Include="Shaders\Utils.hlsli" />
+    <None Include="Shaders\PropPipeline.hlsli" />
+    <None Include="Shaders\LightStructs.hlsli" />
+    <None Include="Shaders\PBRLighting.hlsli" />
+    <None Include="Shaders\ShadowMapping.hlsli" />
+    <None Include="Shaders\CubeMap.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />
@@ -90,5 +97,7 @@
     <FxCompile Include="Shaders\WriteSortingKeys_CS.hlsl" />
     <FxCompile Include="Shaders\SimulateParticles_CS.hlsl" />
     <FxCompile Include="Shaders\VolShadowMap_PS.hlsl" />
+    <FxCompile Include="Shaders\Prop_VS.hlsl" />
+    <FxCompile Include="Shaders\Prop_PS.hlsl" />
   </ItemGroup>
 </Project>

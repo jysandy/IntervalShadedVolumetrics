@@ -308,6 +308,7 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Core\PropPipeline.h" />
     <ClInclude Include="Core\VolShadowMap.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Gradient\BarrierResource.h" />
@@ -331,6 +332,7 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     <ClInclude Include="DeviceResources.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Core\PropPipeline.cpp" />
     <ClCompile Include="Core\VolShadowMap.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Gradient\BarrierResource.cpp" />
@@ -370,9 +372,14 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     <None Include="LICENSE" />
     <None Include="packages.config" />
     <None Include="README.md" />
+    <None Include="Shaders\CubeMap.hlsli" />
     <None Include="Shaders\Culling.hlsli" />
+    <None Include="Shaders\LightStructs.hlsli" />
+    <None Include="Shaders\PBRLighting.hlsli" />
+    <None Include="Shaders\PropPipeline.hlsli" />
     <None Include="Shaders\Quaternion.hlsli" />
     <None Include="Shaders\RenderingEquation.hlsli" />
+    <None Include="Shaders\ShadowMapping.hlsli" />
     <None Include="Shaders\TetrahedronPipeline.hlsli" />
     <None Include="Shaders\Utils.hlsli" />
     <None Include="vcpkg-configuration.json" />
@@ -386,6 +393,18 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Interval_PS</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='GpuTrace|x64'">Interval_PS</EntryPointName>
+    </FxCompile>
+    <FxCompile Include="Shaders\Prop_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Prop_PS</EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Prop_PS</EntryPointName>
+    </FxCompile>
+    <FxCompile Include="Shaders\Prop_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Prop_VS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Prop_VS</EntryPointName>
     </FxCompile>
     <FxCompile Include="Shaders\SimulateParticles_CS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>

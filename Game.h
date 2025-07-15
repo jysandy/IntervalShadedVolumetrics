@@ -25,6 +25,7 @@
 #include "Gradient/RootSignature.h"
 #include "Gradient/BufferManager.h"
 #include "Core/VolShadowMap.h"
+#include "Core/PropPipeline.h"
 
 
 // A basic game implementation that creates a D3D12 device and
@@ -155,9 +156,11 @@ private:
     std::unique_ptr<DirectX::CommonStates> m_states;
 
 
-    std::unique_ptr<DirectX::GeometricPrimitive> m_floor;
-    std::unique_ptr<DirectX::GeometricPrimitive> m_sphere;
-    std::unique_ptr<DirectX::BasicEffect> m_effect;
+    Gradient::BufferManager::MeshHandle m_floor;
+    Gradient::BufferManager::MeshHandle m_sphere;
+
+    std::unique_ptr<ISV::PropPipeline> m_propPipeline;
+
     std::unique_ptr<Gradient::Rendering::RenderTexture> m_renderTarget;
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapper;
     std::unique_ptr<DirectX::ToneMapPostProcess> m_tonemapperHDR10;

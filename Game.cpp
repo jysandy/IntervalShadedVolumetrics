@@ -224,26 +224,29 @@ void Game::DispatchParallelSort(ID3D12GraphicsCommandList6* cl,
 void Game::RenderProps(ID3D12GraphicsCommandList6* cl,
     Vector3 normalizedLightDirection)
 {
-    m_effect->SetLightEnabled(0, true);
-    m_effect->SetLightDiffuseColor(0, m_guiLightBrightness * BrightnessScale * Vector3(m_guiLightColor));
-    m_effect->SetLightSpecularColor(0, m_guiLightBrightness * BrightnessScale * Vector3(m_guiLightColor));
-    m_effect->SetDiffuseColor({ 0.7, 0.7, 0.7 });
-    m_effect->SetSpecularPower(128);
-    m_effect->SetAmbientLightColor(0.001 * Vector3(m_guiLightColor));
-    m_effect->SetLightDirection(0, normalizedLightDirection);
-    m_effect->SetWorld(Matrix::CreateScale({ 50, 0.5, 50 })
-        * Matrix::CreateTranslation({ 0, -10.f, 0 }));
-    m_effect->SetView(m_camera.GetCamera().GetViewMatrix());
-    m_effect->SetProjection(m_camera.GetCamera().GetProjectionMatrix());
+    auto world = Matrix::CreateScale({ 1, 1, 1 })
+        * Matrix::CreateTranslation({ 0, -5.f, 0 });
 
-    m_effect->Apply(cl);
+    m_propPipeline->World = world;
+    m_propPipeline->View = m_camera.GetCamera().GetViewMatrix();
+    m_propPipeline->Proj = m_camera.GetCamera().GetProjectionMatrix();
+    m_propPipeline->Light.Color = m_guiLightColor;
+    m_propPipeline->Light.Strength = m_guiLightBrightness * BrightnessScale;
+    m_propPipeline->Light.Direction = normalizedLightDirection;
+    m_propPipeline->CameraPosition = m_camera.GetCamera().GetPosition();
 
-    m_floor->Draw(cl);
+    m_propPipeline->Apply(cl, true);
+    auto bm = Gradient::BufferManager::Get();
+    auto mesh = bm->GetMesh(m_sphere);
+    mesh->Draw(cl);
 
-    m_effect->SetWorld(Matrix::CreateScale({ 1, 1, 1 })
-        * Matrix::CreateTranslation({ 0, -5.f, 0 }));
-    m_effect->Apply(cl);
-    m_sphere->Draw(cl);
+    world = Matrix::CreateScale({ 50, 0.5, 50 })
+        * Matrix::CreateTranslation({ 0, -10.f, 0 });
+
+    m_propPipeline->World = world;
+    m_propPipeline->Apply(cl, true);
+    mesh = bm->GetMesh(m_floor);
+    mesh->Draw(cl);
 }
 
 void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
@@ -676,8 +679,10 @@ void Game::CreateDeviceDependentResources()
     Gradient::GraphicsMemoryManager::Initialize(device);
     Gradient::BufferManager::Initialize();
 
-    m_floor = GeometricPrimitive::CreateBox({ 1, 1, 1 });
-    m_sphere = GeometricPrimitive::CreateSphere();
+    auto bm = Gradient::BufferManager::Get();
+
+    m_floor = bm->CreateBox(device, cq, { 1, 1, 1 });
+    m_sphere = bm->CreateSphere(device, cq);
 
     m_states = std::make_unique<DirectX::CommonStates>(device);
 
@@ -802,6 +807,8 @@ void Game::CreateDeviceDependentResources()
         L"SimulateParticles_CS.cso",
         m_simulationRS.Get());
 
+    m_propPipeline = std::make_unique<ISV::PropPipeline>(device);
+
     // Set up FidelityFX interface.
 
     size_t scratchMemorySize = ffxGetScratchMemorySizeDX12(2);
@@ -843,19 +850,6 @@ void Game::CreateWindowSizeDependentResources()
         DXGI_FORMAT_R16G16B16A16_FLOAT,
         true
     );
-
-    RenderTargetState rtState(m_renderTarget->GetRenderTargetFormat(),
-        m_renderTarget->GetDepthBufferFormat(),
-        m_renderTarget->GetSampleCount());
-
-    EffectPipelineStateDescription pd(
-        &GeometricPrimitive::VertexType::InputLayout,
-        CommonStates::Opaque,
-        CommonStates::DepthDefault,
-        CommonStates::CullNone,
-        rtState);
-
-    m_effect = std::make_unique<BasicEffect>(device, EffectFlags::Lighting, pd);
 }
 
 void Game::CreateTetrahedronInstances()
@@ -923,8 +917,6 @@ void Game::CreateTetrahedronInstances()
 
 void Game::CleanupResources()
 {
-    m_floor.reset();
-    m_effect.reset();
     m_renderTarget.reset();
 
     ThrowIfFfxFailed(ffxParallelSortContextDestroy(&m_parallelSortContext));

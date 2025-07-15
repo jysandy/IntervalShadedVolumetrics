@@ -153,7 +153,10 @@ void Game::Update(DX::StepTimer const& timer)
 
     auto time = static_cast<float>(timer.GetTotalSeconds());
 
-    m_sphereWorld = Matrix::CreateScale({ 3, 3, 3 })
+    m_boxWorld = Matrix::CreateScale({ 1, 1, 1 })
+        * Matrix::CreateRotationZ(DirectX::XMConvertToRadians(45))
+        * Matrix::CreateRotationY(2 * sin(2 * time))
+        * Matrix::CreateRotationX(69 + 2 * sin(2 * time))
         * Matrix::CreateTranslation({ 0, 0.f, 0 });
 
     m_floorWorld = Matrix::CreateScale({ 50, 0.5, 50 })
@@ -232,7 +235,7 @@ void Game::RenderPropShadows(ID3D12GraphicsCommandList6* cl,
 {
     m_shadowMap->SetLightDirection(normalizedLightDirection);
 
-    m_propPipeline->World = m_sphereWorld;
+    m_propPipeline->World = m_boxWorld;
     m_propPipeline->View = m_shadowMap->GetView();
     m_propPipeline->Proj = m_shadowMap->GetProjection();
 
@@ -240,7 +243,7 @@ void Game::RenderPropShadows(ID3D12GraphicsCommandList6* cl,
     m_shadowMap->ClearAndSetDSV(cl);
 
     auto bm = Gradient::BufferManager::Get();
-    auto mesh = bm->GetMesh(m_sphere);
+    auto mesh = bm->GetMesh(m_box);
     mesh->Draw(cl);
 
     m_propPipeline->World = m_floorWorld;
@@ -254,7 +257,7 @@ void Game::RenderProps(ID3D12GraphicsCommandList6* cl,
 {
     m_shadowMap->TransitionToShaderResource(cl);
 
-    m_propPipeline->World = m_sphereWorld;
+    m_propPipeline->World = m_boxWorld;
     m_propPipeline->View = m_camera.GetCamera().GetViewMatrix();
     m_propPipeline->Proj = m_camera.GetCamera().GetProjectionMatrix();
     m_propPipeline->Light.Color = m_guiLightColor;
@@ -266,7 +269,7 @@ void Game::RenderProps(ID3D12GraphicsCommandList6* cl,
 
     m_propPipeline->Apply(cl, true);
     auto bm = Gradient::BufferManager::Get();
-    auto mesh = bm->GetMesh(m_sphere);
+    auto mesh = bm->GetMesh(m_box);
     mesh->Draw(cl);
 
     m_propPipeline->World = m_floorWorld;
@@ -716,7 +719,7 @@ void Game::CreateDeviceDependentResources()
     auto bm = Gradient::BufferManager::Get();
 
     m_floor = bm->CreateBox(device, cq, { 1, 1, 1 });
-    m_sphere = bm->CreateSphere(device, cq);
+    m_box = bm->CreateBox(device, cq, {3, 3, 3});
 
     m_states = std::make_unique<DirectX::CommonStates>(device);
 

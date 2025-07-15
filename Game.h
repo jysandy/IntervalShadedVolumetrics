@@ -161,9 +161,9 @@ private:
 
 
     Gradient::BufferManager::MeshHandle m_floor;
-    Gradient::BufferManager::MeshHandle m_sphere;
+    Gradient::BufferManager::MeshHandle m_box;
 
-    DirectX::SimpleMath::Matrix m_sphereWorld;
+    DirectX::SimpleMath::Matrix m_boxWorld;
     DirectX::SimpleMath::Matrix m_floorWorld;
 
     std::unique_ptr<ISV::PropPipeline> m_propPipeline;

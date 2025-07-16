@@ -194,10 +194,10 @@ private:
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_simulationPSO;
 
 
-    DirectX::XMFLOAT3 m_guiAlbedo = { 0.2392156863, 0.2392156863, 0.2392156863 };
-    float m_guiExtinction = 21.f;
+    DirectX::XMFLOAT3 m_guiAlbedo = { 1.f, 1.f, 1.f };
+    float m_guiExtinction = 15.f;
 
-    DirectX::XMFLOAT3 m_guiLightDirection = { 0, -0.2, 1 };
+    DirectX::XMFLOAT3 m_guiLightDirection = { 0, -1, 1 };
     float m_guiLightBrightness = 2.f;
 
     DirectX::XMFLOAT3 m_guiLightColor = { 1, 0.8, 0.4 };

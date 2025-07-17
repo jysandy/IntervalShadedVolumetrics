@@ -38,7 +38,7 @@ float4 Prop_PS(VertexType input) : SV_TARGET
         shadowMap, shadowMapSampler, g_ShadowTransform, input.WorldPosition
     );
 
-    float3 ambient = 0.01.xxx;
+    float3 ambient = 0.1.xxx;
     
     float ot = SampleOpticalThickness(input.WorldPosition);
     float transmittance = exp(-ot);

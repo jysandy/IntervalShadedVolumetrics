@@ -200,7 +200,7 @@ private:
     DirectX::XMFLOAT3 m_guiLightDirection = { 0, -1, 1 };
     float m_guiLightBrightness = 2.f;
 
-    DirectX::XMFLOAT3 m_guiLightColor = { 1, 0.8, 0.4 };
+    DirectX::XMFLOAT3 m_guiLightColor = { 1, 0.8705882353, 0.6078431373 };
     float m_guiScatteringAsymmetry = 0.4f;
 
     DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 0, 0 };

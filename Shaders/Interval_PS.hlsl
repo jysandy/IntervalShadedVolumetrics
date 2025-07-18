@@ -244,14 +244,16 @@ float3 SimpsonScatteredLight(
     float Zmax,
     float3 centrePos,
     float extinction,
-    float falloffRadius
+    float falloffRadius,
+    float fadedExtinction
 )
 {
     float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
     
     float transmissionFactor = IntegrateSimpsonTransmittanceRayMarch(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius);
 
-    return albedo * phase * irradiance * transmissionFactor;
+    return albedo * phase * irradiance * transmissionFactor
+        + fadedExtinction * g_Albedo * irradiance * phase * 0.1;
 }
 
 void ComputeDebugEquation(out float3 Cscat, out float Tv,
@@ -408,7 +410,8 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
                     Zmax,
                     centrePos,
                     extinction,
-                    g_ExtinctionFalloffRadius);
+                    g_ExtinctionFalloffRadius,
+                    fadedExtinction);
     
         if (any(isnan(Cscat)))
         {

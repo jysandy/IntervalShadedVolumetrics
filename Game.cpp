@@ -324,7 +324,10 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
     m_volShadowMap->Render(cl,
-        [constants, &cl, &bm, this](Matrix view, Matrix proj, DirectX::BoundingOrientedBox bb)
+        [constants, &cl, &bm, this](Matrix view, 
+            Matrix proj, 
+            DirectX::BoundingOrientedBox bb,
+            float nearPlane)
         {
             auto newConstants = constants;
 
@@ -333,7 +336,7 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
             newConstants.View = v.Transpose();
             newConstants.Proj = proj.Transpose();
             newConstants.InverseViewProj = (v * proj).Invert().Transpose();
-            newConstants.NearPlane = 0;
+            newConstants.NearPlane = nearPlane;
             auto cullingPlanes
                 = Gradient::Math::GetPlanes(bb);
             for (int i = 0; i < 6; i++)

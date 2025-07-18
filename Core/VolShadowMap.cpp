@@ -52,24 +52,32 @@ namespace ISV
         clearValue.Color[2] = 0;
         clearValue.Color[3] = 0;
 
-        m_texture.Create(device,
+        m_texture3D.Create(device,
             &textureDesc,
             D3D12_RESOURCE_STATE_RENDER_TARGET,
             &clearValue);
 
-        m_texture.Get()->SetName(L"Volumetric Shadow Map");
+        m_texture3D.Get()->SetName(L"Volumetric Shadow Map");
 
+        auto textureDesc2D = CD3DX12_RESOURCE_DESC::Tex2D(
+            format,
+            Width,
+            Width,
+            1,
+            1
+        );
+
+        textureDesc2D.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+        m_texture2D.Create(device,
+            &textureDesc2D,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            &clearValue);
 
         auto rtvDesc = D3D12_RENDER_TARGET_VIEW_DESC();
         rtvDesc.Format = format;
-        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
-        rtvDesc.Texture3D.WSize = 1; // will this work?
-
-        for (uint32_t i = 0; i < Depth; i++)
-        {
-            rtvDesc.Texture3D.FirstWSlice = i;
-            m_rtvs.push_back(gmm->CreateRTV(device, rtvDesc, m_texture.Get()));
-        }
+        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+        m_rtv = gmm->CreateRTV(device, rtvDesc, m_texture2D.Get());
 
         auto srvDesc = D3D12_SHADER_RESOURCE_VIEW_DESC();
         srvDesc.Format = format;
@@ -79,7 +87,7 @@ namespace ISV
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
         m_srv = gmm->CreateSRV(device,
-            m_texture.Get(),
+            m_texture3D.Get(),
             &srvDesc);
     }
 
@@ -102,13 +110,14 @@ namespace ISV
         float sliceThickness = farPlane / (Depth - 1.f);
 
         float boxFarPlane = depthSlice * sliceThickness;
+        float boxNearPlane = (depthSlice - 1) * sliceThickness;
 
         std::array<Vector3, 6> bounds;
         bounds[0] = { -m_sceneRadius, 0, 0 }; // left
         bounds[1] = { m_sceneRadius, 0, 0 }; // right
         bounds[2] = { 0, m_sceneRadius, 0 }; // top
         bounds[3] = { 0, -m_sceneRadius, 0 }; // bottom
-        bounds[4] = { 0, 0, 0 }; // near
+        bounds[4] = { 0, 0, -boxNearPlane }; // near
         bounds[5] = { 0, 0, -boxFarPlane }; // far
 
         DirectX::BoundingBox lightSpaceAABB;
@@ -129,29 +138,66 @@ namespace ISV
     {
         cl->RSSetViewports(1, &m_shadowMapViewport);
 
-        m_texture.Transition(cl, D3D12_RESOURCE_STATE_RENDER_TARGET);
+        m_texture3D.Transition(cl, D3D12_RESOURCE_STATE_COPY_DEST);
+        m_texture2D.Transition(cl, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+        auto rtvHandle = m_rtv->GetCPUHandle();
+        cl->ClearRenderTargetView(rtvHandle,
+            DirectX::ColorsLinear::Black,
+            0, nullptr
+        );
+
+        D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+        dstLocation.pResource = m_texture3D.Get();
+        dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dstLocation.SubresourceIndex = D3D12CalcSubresource(0, 0, 0, 1, 1);
+
+        D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+        srcLocation.pResource = m_texture2D.Get();
+        srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        srcLocation.SubresourceIndex = 0;
+
+        m_texture3D.Transition(cl, D3D12_RESOURCE_STATE_COPY_DEST);
 
         for (uint32_t depthSlice = 0; depthSlice < Depth; depthSlice++)
         {
-            auto rtvHandle = m_rtvs[depthSlice]->GetCPUHandle();
-
-            cl->ClearRenderTargetView(rtvHandle,
-                DirectX::ColorsLinear::Black,
-                0, nullptr
-            );
-
-            if (depthSlice == 0) continue;
-
+            m_texture2D.Transition(cl, D3D12_RESOURCE_STATE_RENDER_TARGET);
             cl->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
-            fn(m_shadowMapView, m_shadowMapProj, GetBoundingBox(depthSlice));
+            if (depthSlice > 0)
+            {
+                float farPlane = 2 * m_sceneRadius;
+                float sliceThickness = farPlane / (Depth - 1.f);
+
+                float boxFarPlane = depthSlice * sliceThickness;
+                float boxNearPlane = (depthSlice - 1) * sliceThickness;
+
+                fn(m_shadowMapView, m_shadowMapProj, 
+                    GetBoundingBox(depthSlice), boxNearPlane);
+            }
+
+            m_texture2D.Transition(cl, D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+            D3D12_BOX srcBox = { 0, 0, Width, Width, 0, 1 }; 
+            srcBox.left = 0;
+            srcBox.top = 0;
+            srcBox.right = Width;
+            srcBox.bottom = Width;
+            srcBox.front = 0;
+            srcBox.back = 1;
+
+            cl->CopyTextureRegion(
+                &dstLocation,
+                0, 0, depthSlice,
+                &srcLocation, &srcBox
+            );
         }
     }
 
     Gradient::GraphicsMemoryManager::DescriptorView
         VolShadowMap::TransitionAndGetSRV(ID3D12GraphicsCommandList* cl)
     {
-        m_texture.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        m_texture3D.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         return m_srv;
     }
 

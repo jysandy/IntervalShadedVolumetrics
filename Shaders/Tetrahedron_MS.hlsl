@@ -198,15 +198,10 @@ void Tetrahedron_MS(
             tet.pos[2] = mul(coords[indices.index[2]], modelView);
             tet.pos[3] = mul(coords[indices.index[3]], modelView);
 
-            //clip test
-            float bias = nearplane * 0.1;
-        
-            if (
-            tet.pos[0].z < nearplane + bias
-            || tet.pos[1].z < nearplane + bias
-            || tet.pos[2].z < nearplane + bias
-            || tet.pos[3].z < nearplane + bias
-            )
+            // clip bounding spheres that intersect the near plane.
+            // This is needed for shadows
+            float3 centreViewPos = mul(float4(worldPosition, 1), view).xyz;
+            if (centreViewPos.z - scaleFactor < nearplane)
             {
                 visible = false;
             }

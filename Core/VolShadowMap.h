@@ -15,7 +15,7 @@ namespace ISV
         const uint32_t Depth = 10;
 
         using DrawFn = std::function<void(DirectX::SimpleMath::Matrix,
-            DirectX::SimpleMath::Matrix, DirectX::BoundingOrientedBox)>;
+            DirectX::SimpleMath::Matrix, DirectX::BoundingOrientedBox, float)>;
 
         VolShadowMap(ID3D12Device* device,
             float sceneRadius,
@@ -31,8 +31,9 @@ namespace ISV
     private:
         D3D12_VIEWPORT m_shadowMapViewport;
         Gradient::GraphicsMemoryManager::DescriptorView m_srv;
-        Gradient::BarrierResource m_texture;
-        std::vector<Gradient::GraphicsMemoryManager::DescriptorView> m_rtvs;
+        Gradient::BarrierResource m_texture3D;
+        Gradient::BarrierResource m_texture2D;
+        Gradient::GraphicsMemoryManager::DescriptorView m_rtv;
 
         DirectX::BoundingOrientedBox GetBoundingBox(uint32_t depthSlice);
 

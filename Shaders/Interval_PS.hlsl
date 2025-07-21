@@ -15,7 +15,7 @@ struct BlendOutput
     float Depth : SV_Depth;
 };
 
-// The Henyey-Greenstein phase function
+// The Henyey-Greenstein phase function             
 // TODO: Should this be wavelength dependent?
 float HGPhase(float3 L, float3 V, float asymmetry)
 {

@@ -117,7 +117,7 @@ public:
     void CleanupResources();
 
     // Properties
-    void GetDefaultSize( int& width, int& height ) const noexcept;
+    void GetDefaultSize(int& width, int& height) const noexcept;
 
 private:
 
@@ -139,7 +139,7 @@ private:
         Gradient::BufferManager::InstanceBufferEntry* payload);
     void RenderPropShadows(ID3D12GraphicsCommandList6* cl,
         DirectX::SimpleMath::Vector3 lightDirection);
-    void RenderProps(ID3D12GraphicsCommandList6* cl, 
+    void RenderProps(ID3D12GraphicsCommandList6* cl,
         DirectX::SimpleMath::Vector3 lightDirection);
     void RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
         const Constants& constants);
@@ -162,9 +162,13 @@ private:
 
     Gradient::BufferManager::MeshHandle m_floor;
     Gradient::BufferManager::MeshHandle m_box;
+    Gradient::BufferManager::MeshHandle m_sphere;
 
+    DirectX::XMFLOAT3 m_guiBoxPosition = { -3, 0, 0 };
+    DirectX::XMFLOAT3 m_guiSpherePosition = { 3, 0, 0 };
     DirectX::SimpleMath::Matrix m_boxWorld;
     DirectX::SimpleMath::Matrix m_floorWorld;
+    DirectX::SimpleMath::Matrix m_sphereWorld;
 
     std::unique_ptr<ISV::PropPipeline> m_propPipeline;
 

@@ -11,8 +11,8 @@ namespace ISV
     class VolShadowMap
     {
     public:
-        const uint32_t Width = 512;
-        const uint32_t Depth = 10;
+        const uint32_t Width = 256;
+        const uint32_t Depth = 5;
 
         using DrawFn = std::function<void(DirectX::SimpleMath::Matrix,
             DirectX::SimpleMath::Matrix, DirectX::BoundingOrientedBox, float)>;

@@ -209,13 +209,14 @@ private:
 
     DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 0, 0 };
 
-    float m_guiScale = 4.f;
-    float m_guiAnisotropy = 0.2f;
-    float m_guiExtinctionFalloffFactor = 2.f;
+    int m_guiParticleCount = 500;
+    float m_guiScale = 6.f;
+    float m_guiExtinctionFalloffFactor = 1.6f;
 
+    float m_guiAnisotropy = 0.2f;
     bool m_guiDebugVolShadows = false;
 
-    int m_guiParticleCount = 2000;
+    
     int m_guiRenderingMethod = 2;
 
     // Bullet shooting state

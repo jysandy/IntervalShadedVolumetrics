@@ -12,7 +12,7 @@ namespace ISV
     {
     public:
         const uint32_t Width = 256;
-        const uint32_t Depth = 5;
+        const uint32_t Depth = 10;
 
         using DrawFn = std::function<void(DirectX::SimpleMath::Matrix,
             DirectX::SimpleMath::Matrix, DirectX::BoundingOrientedBox, float)>;

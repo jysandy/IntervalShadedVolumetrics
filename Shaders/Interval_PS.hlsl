@@ -262,7 +262,7 @@ float3 SimpsonScatteredLight(
     float transmissionFactor = IntegrateSimpsonTransmittanceRayMarch(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius);
 
     return albedo * phase * irradiance * transmissionFactor
-        + fadedExtinction * g_Albedo * irradiance * phase * 0.1;
+        + fadedExtinction * g_Albedo * irradiance * phase * 0.01;
 }
 
 void ComputeDebugEquation(out float3 Cscat, out float Tv,

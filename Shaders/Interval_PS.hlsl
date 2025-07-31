@@ -140,9 +140,18 @@ float IntegrateTaylorTransmittance(
 
 float Visibility(float3 worldPosition)
 {
-    return calculateShadowFactorNoLargeKernel(ShadowMap, 
-        ShadowMapSampler, 
-        g_ShadowTransform, worldPosition);
+    if (g_SoftShadows)
+    {
+        return calculateShadowFactor(ShadowMap,
+            ShadowMapSampler,
+            g_ShadowTransform, worldPosition);        
+    }
+    else
+    {   
+        return calculateShadowFactorNoLargeKernel(ShadowMap,
+            ShadowMapSampler,
+            g_ShadowTransform, worldPosition);
+    }
 }
 
 float IntegrateSimpsonTransmittance(

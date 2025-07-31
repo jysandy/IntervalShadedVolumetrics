@@ -40,6 +40,8 @@ cbuffer Constants : register(b0, space0)
     float g_Scale;
     float g_Anisotropy;
     uint g_RenderingMethod;
+    
+    uint g_SoftShadows;
 };
 
 struct InstanceData

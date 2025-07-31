@@ -72,6 +72,8 @@ public:
         float Scale = 3.f;
         float Anisotropy = 0.2f;
         uint32_t RenderingMethod = 0;
+
+        uint32_t SoftShadows = 0;
     };
 
     struct __declspec(align(16)) InstanceData
@@ -215,6 +217,7 @@ private:
 
     float m_guiAnisotropy = 0.2f;
     bool m_guiDebugVolShadows = false;
+    bool m_guiSoftShadows = false;
 
     
     int m_guiRenderingMethod = 2;

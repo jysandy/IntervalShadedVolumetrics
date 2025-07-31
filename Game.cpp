@@ -404,6 +404,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Brightness", &m_guiLightBrightness, 0, 10);
         ImGui::ColorEdit3("Color", &m_guiLightColor.x);
         ImGui::Checkbox("Debug Volumetric Shadows", &m_guiDebugVolShadows);
+        ImGui::Checkbox("Soft Shadows", &m_guiSoftShadows);
 
         ImGui::TreePop();
     }
@@ -512,6 +513,7 @@ void Game::Render()
     auto instances = bm->GetInstanceBuffer(m_tetInstances);
     constants.NumInstances = m_guiParticleCount;
     constants.DebugVolShadows = m_guiDebugVolShadows ? 1 : 0;
+    constants.SoftShadows = m_guiSoftShadows ? 1 : 0;
     constants.Scale = m_guiScale;
     constants.ExtinctionFalloffRadius = m_guiScale * m_guiExtinctionFalloffFactor;
     constants.Anisotropy = m_guiAnisotropy;

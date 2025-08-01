@@ -74,6 +74,7 @@ public:
         uint32_t RenderingMethod = 0;
 
         uint32_t SoftShadows = 0;
+        uint32_t StepCount = 1;
     };
 
     struct __declspec(align(16)) InstanceData
@@ -221,6 +222,7 @@ private:
 
     
     int m_guiRenderingMethod = 2;
+    int m_guiStepCount = 1;
 
     // Bullet shooting state
     bool m_didShoot = false;

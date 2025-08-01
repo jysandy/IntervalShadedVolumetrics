@@ -394,6 +394,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
         const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)" };
         ImGui::Combo("Rendering Method", &m_guiRenderingMethod, items, IM_ARRAYSIZE(items));
+        ImGui::SliderInt("Step Count", &m_guiStepCount, 1, 5);
 
         ImGui::TreePop();
     }
@@ -518,6 +519,7 @@ void Game::Render()
     constants.ExtinctionFalloffRadius = m_guiScale * m_guiExtinctionFalloffFactor;
     constants.Anisotropy = m_guiAnisotropy;
     constants.RenderingMethod = m_guiRenderingMethod;
+    constants.StepCount = m_guiStepCount;
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
     constants.VolumetricShadowTransform = m_volShadowMap->GetShadowTransform().Transpose();

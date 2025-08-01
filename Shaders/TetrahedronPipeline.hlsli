@@ -42,6 +42,7 @@ cbuffer Constants : register(b0, space0)
     uint g_RenderingMethod;
     
     uint g_SoftShadows;
+    uint g_StepCount;
 };
 
 struct InstanceData

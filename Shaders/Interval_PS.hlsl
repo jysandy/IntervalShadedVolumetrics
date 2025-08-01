@@ -196,10 +196,9 @@ float IntegrateSimpsonTransmittanceRayMarch(
 {
     float integral = 0;
     
-    int count = 1;
-    float stepSize = (Zmax - Zmin) / (float) count;
+    float stepSize = (Zmax - Zmin) / (float) g_StepCount;
     float3 stepDir = normalize(maxpoint - minpoint);
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < g_StepCount; i++)
     {
         float3 start = minpoint + i * stepSize * stepDir;
         float3 end = minpoint + (i + 1) * stepSize * stepDir;

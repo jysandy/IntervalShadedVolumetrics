@@ -428,6 +428,43 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
     }
 }
 
+void ComputeWastedPixelsEquation(out float3 Cscat, out float Tv,
+    float3 minpoint,
+    float3 maxpoint,
+    float3 centrePos,
+    float extinction
+    )
+{
+    Cscat = 0.xxx;
+    Tv = 1;
+    
+    float Zmin = length(g_CameraPosition - minpoint);
+    float Zmax = length(g_CameraPosition - maxpoint);
+    
+    if (abs(Zmin - Zmax) < EPSILON)
+    {
+        return;
+    }
+    
+    float3 V = normalize(g_CameraPosition - minpoint);
+    float3 toCentre = normalize(centrePos - minpoint);
+    float d = length(centrePos - minpoint);
+    float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+    
+    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    
+    if (fadedExtinction > 0.0)
+    {
+        Tv = 0.f;
+        Cscat = float3(0, 1, 0);    
+    }
+    else
+    {
+        Cscat = float3(1, 0, 0);
+        Tv = 0.f;
+    }
+}
+
 BlendOutput Interval_PS(VertexType input)
 {
     float4 maxpoint = float4(input.A.xy, input.A.z, 1.0);
@@ -468,6 +505,10 @@ BlendOutput Interval_PS(VertexType input)
     else if (g_RenderingMethod == 2)
     {
         ComputeSimpsonEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);
+    }
+    else if (g_RenderingMethod == 3)
+    {
+        ComputeWastedPixelsEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);
     }
     
     ret.Color = float4(Cscat, Tv);

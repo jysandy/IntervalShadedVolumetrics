@@ -394,7 +394,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
         const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)" };
         ImGui::Combo("Rendering Method", &m_guiRenderingMethod, items, IM_ARRAYSIZE(items));
-        ImGui::SliderInt("Step Count", &m_guiStepCount, 1, 5);
+        ImGui::SliderInt("Step Count", &m_guiStepCount, 1, 10);
 
         ImGui::TreePop();
     }

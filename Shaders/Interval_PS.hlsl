@@ -127,7 +127,7 @@ float IntegrateTaylorTransmittance(
     float Omax = SampleOpticalThickness(maxpoint);
     
     return max(0, IntegrateTaylorSeries(
-        2,
+        4,
         Zmin,
         Zmax,
         Omin,

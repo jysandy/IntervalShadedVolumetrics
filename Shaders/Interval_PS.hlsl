@@ -463,7 +463,7 @@ void ComputeWastedPixelsEquation(out float3 Cscat, out float Tv,
     if (ot > 0.001)
     {
         Tv = 0.f;
-        Cscat = float3(0, 1, 0);    
+        Cscat = 1.xxx;    
     }
     else
     {

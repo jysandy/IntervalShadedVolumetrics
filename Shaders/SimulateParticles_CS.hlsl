@@ -17,22 +17,20 @@ void SimulateParticles_CS(uint3 DTid : SV_DispatchThreadID)
     float3 targetPosition = mul(float4(Instances[DTid.x].TargetPosition, 1), g_TargetWorld)
         .xyz;
     
-    float3 velocityDirection = targetPosition - worldPosition;
+    float3 attractionVector = targetPosition - worldPosition;
     
     // Like gravity, this is independent of mass
     float3 attractionAcceleration = 50.f * 
         normalize(targetPosition - worldPosition);
     
-    if (length(velocityDirection) == 0)
+    if (length(attractionVector) < 0.0001)
     {
         attractionAcceleration = 0.xxx;
     }
     
     // This is not independent of mass
-    float3 dampingForce = -0.4f * Instances[DTid.x].Velocity;
+    float3 dampingForce = -4.f * Instances[DTid.x].Velocity;
     
-    float3 acceleration 
-        = attractionAcceleration + (dampingForce / Instances[DTid.x].Mass);
     
     float3 l2p = LineToPoint(g_ShootRayStart,
         normalize(g_ShootRayEnd - g_ShootRayStart),
@@ -43,6 +41,18 @@ void SimulateParticles_CS(uint3 DTid : SV_DispatchThreadID)
     float3 bulletScatterVelocity 
         = g_DidShoot * 0.5 * normalize(l2p) / pow(lineDistance, 2);
     
-    Instances[DTid.x].Velocity += acceleration * g_DeltaTime + bulletScatterVelocity;
+    
+    float3 dampingVelocityChange = (dampingForce / Instances[DTid.x].Mass) * g_DeltaTime;
+    
+    if (length(dampingVelocityChange) < length(Instances[DTid.x].Velocity))
+    {
+        Instances[DTid.x].Velocity += dampingVelocityChange;
+    }
+    else
+    {
+        Instances[DTid.x].Velocity = 0.xxx;
+    }
+    
+    Instances[DTid.x].Velocity += attractionAcceleration * g_DeltaTime + bulletScatterVelocity;    
     Instances[DTid.x].WorldPosition += Instances[DTid.x].Velocity * g_DeltaTime;
 }

@@ -122,11 +122,6 @@ float Sigma_t(
     
     float extinction = sigma * exp(exponent);
     
-    if (extinction < 0.0005)
-    {
-        return 0;
-    }
-    
     return extinction;
 }
 

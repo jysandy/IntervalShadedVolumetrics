@@ -396,9 +396,10 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
     float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
     
-    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     
-    if (fadedExtinction > 0.0)
+    // Any higher than this and a circle starts to appear
+    if (ot > 0.001)
     {
         Tv = FadedTransmittance(Zmin,
                     Zmax,
@@ -409,6 +410,7 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
         
         float3 L = normalize(-g_LightDirection);
         float3 R = g_LightBrightness * g_LightColor;
+        float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
         Cscat = SimpsonScatteredLight(
                     g_Albedo,
                     R, L, V,
@@ -425,6 +427,11 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
         {
             Cscat = 0.xxx;
         }
+    }
+    else
+    {
+        Tv = 1;
+        Cscat = 0.xxx;
     }
 }
 
@@ -451,9 +458,9 @@ void ComputeWastedPixelsEquation(out float3 Cscat, out float Tv,
     float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
     
-    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     
-    if (fadedExtinction > 0.0)
+    if (ot > 0.001)
     {
         Tv = 0.f;
         Cscat = float3(0, 1, 0);    

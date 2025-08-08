@@ -15,6 +15,8 @@ struct BlendOutput
     float Depth : SV_Depth;
 };
 
+static const float MIN_OT = 0.001f;
+
 // The Henyey-Greenstein phase function             
 // TODO: Should this be wavelength dependent?
 float HGPhase(float3 L, float3 V, float asymmetry)
@@ -161,22 +163,21 @@ float IntegrateSimpsonTransmittance(
     float Zmax,
     float3 centrePos,
     float extinction,
-    float falloffRadius
+    float falloffRadius,
+    float3 V
 )
 {
     float integral = 0;
     
     float stepSize = (Zmax - Zmin) / (float) g_StepCount;
-    float3 stepDir = normalize(maxpoint - minpoint);
 
     float fmin = 0;
     float Omin = 0;
-    float3 V = normalize(g_CameraPosition - minpoint);
     
     for (int i = 0; i < g_StepCount; i++)
     {
-        float3 start = minpoint + i * stepSize * stepDir;
-        float3 end = minpoint + (i + 1) * stepSize * stepDir;
+        float3 start = minpoint + i * stepSize * (-V);
+        float3 end = minpoint + (i + 1) * stepSize * (-V);
         
         float minZ = Zmin + i * stepSize;
         float maxZ = Zmin + (i + 1) * stepSize;
@@ -194,20 +195,15 @@ float IntegrateSimpsonTransmittance(
                      Visibility(start));
         }
         
-        float Zmid = (minZ + maxZ) / 2.f;
-    
         float fmax = f(maxZ,
                         minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius,
                         Visibility(end));
         
-        float foo =
-            fmin
-            + 4 * f(Zmid,
-                    minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius,
-                    Visibility((start + end) / 2.f))
-            + fmax;
-    
-        integral += ((maxZ - minZ) / 6.f) * foo;
+        integral += ((maxZ - minZ) / 6.f) * (fmin
+                                             + 4 * f((minZ + maxZ) / 2.f,
+                                                     minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius,
+                                                     Visibility((start + end) / 2.f))
+                                             + fmax);
         Omin = Omax;
         fmin = fmax;
     }
@@ -251,13 +247,16 @@ float3 SimpsonScatteredLight(
     float3 centrePos,
     float extinction,
     float falloffRadius,
-    float fadedExtinction
+    float d, 
+    float cosAlpha
 )
 {
     float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
     
-    float transmissionFactor = IntegrateSimpsonTransmittance(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius);
+    float transmissionFactor = IntegrateSimpsonTransmittance(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius, V);
 
+    
+    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     return albedo * phase * irradiance * transmissionFactor
         + fadedExtinction * g_Albedo * irradiance * phase * 0.01;
 }
@@ -397,7 +396,7 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
     float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     
     // Any higher than this and a circle starts to appear
-    if (ot > 0.001)
+    if (ot > MIN_OT)
     {
         Tv = FadedTransmittance(Zmin,
                     Zmax,
@@ -406,9 +405,9 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
                     extinction,
                     g_ExtinctionFalloffRadius);
         
-        float3 L = normalize(-g_LightDirection);
+        float3 L = -g_LightDirection;
         float3 R = g_LightBrightness * g_LightColor;
-        float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+        
         Cscat = SimpsonScatteredLight(
                     g_Albedo,
                     R, L, V,
@@ -419,7 +418,8 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
                     centrePos,
                     extinction,
                     g_ExtinctionFalloffRadius,
-                    fadedExtinction);
+                    d,
+                    cosAlpha);
     
         if (any(isnan(Cscat)))
         {
@@ -458,7 +458,7 @@ void ComputeWastedPixelsEquation(out float3 Cscat, out float Tv,
     
     float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     
-    if (ot > 0.001)
+    if (ot > MIN_OT)
     {
         Tv = 0.f;
         Cscat = 1.xxx;    
@@ -472,21 +472,26 @@ void ComputeWastedPixelsEquation(out float3 Cscat, out float Tv,
 
 BlendOutput Interval_PS(VertexType input)
 {
-    float4 maxpoint = float4(input.A.xy, input.A.z, 1.0);
-    float4 minpoint = float4(input.A.xy, input.A.w, 1.0);
-
-    float4 a = mul(minpoint, g_InverseViewProj);
-    float4 b = mul(maxpoint, g_InverseViewProj);
-    a = a / a.w;
-    b = b / b.w;
+    
+    float4 a, b;
+    {
+        float4 maxpoint = float4(input.A.xy, input.A.z, 1.0);
+        float4 minpoint = float4(input.A.xy, input.A.w, 1.0);
+    
+        a = mul(minpoint, g_InverseViewProj);
+        b = mul(maxpoint, g_InverseViewProj);
+        a = a / a.w;
+        b = b / b.w;
+    }
 
     BlendOutput ret;
-
-    float4 reprojected = float4(mul(a, view).xyz, 1);
-    reprojected.xyz *= -1;
-    reprojected = mul(reprojected, persp);
-    reprojected /= reprojected.w;
-    ret.Depth = reprojected.z;
+    {
+        float4 reprojected = float4(mul(a, view).xyz, 1);
+        reprojected.xyz *= -1;
+        reprojected = mul(reprojected, persp);
+        reprojected /= reprojected.w;
+        ret.Depth = reprojected.z;
+    }
     
     float extinction = input.ExtinctionScale * g_Extinction * EXTINCTION_SCALE;
     extinction = max(EPSILON, extinction);

@@ -159,36 +159,6 @@ float IntegrateSimpsonTransmittance(
     float3 maxpoint,
     float Zmin,
     float Zmax,
-    float d,
-    float cosAlpha,
-    float extinction,
-    float falloffRadius
-)
-{
-    float Omin = SampleOpticalThickness(minpoint);
-    float Omax = SampleOpticalThickness(maxpoint);
-    
-    float Zmid = (Zmin + Zmax) / 2.f;
-    
-    float foo =
-    f(Zmin,
-      Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius, 
-      Visibility(minpoint))
-    + 4 * f(Zmid,
-            Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius, 
-            Visibility((minpoint + maxpoint) / 2.f))
-    + f(Zmax,
-        Zmin, Zmax, Omin, Omax, d, cosAlpha, extinction, falloffRadius, 
-        Visibility(maxpoint));
-    
-    return ((Zmax - Zmin) / 6.f) * foo;
-}
-
-float IntegrateSimpsonTransmittanceRayMarch(
-    float3 minpoint,
-    float3 maxpoint,
-    float Zmin,
-    float Zmax,
     float3 centrePos,
     float extinction,
     float falloffRadius
@@ -198,6 +168,11 @@ float IntegrateSimpsonTransmittanceRayMarch(
     
     float stepSize = (Zmax - Zmin) / (float) g_StepCount;
     float3 stepDir = normalize(maxpoint - minpoint);
+
+    float fmin = 0;
+    float Omin = 0;
+    float3 V = normalize(g_CameraPosition - minpoint);
+    
     for (int i = 0; i < g_StepCount; i++)
     {
         float3 start = minpoint + i * stepSize * stepDir;
@@ -205,13 +180,36 @@ float IntegrateSimpsonTransmittanceRayMarch(
         
         float minZ = Zmin + i * stepSize;
         float maxZ = Zmin + (i + 1) * stepSize;
-
-        float3 V = normalize(g_CameraPosition - start);
+        
         float3 toCentre = normalize(centrePos - start);
         float d = length(centrePos - start);
         float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
         
-        integral += IntegrateSimpsonTransmittance(start, end, minZ, maxZ, d, cosAlpha, extinction, falloffRadius);
+        float Omax = SampleOpticalThickness(end);
+        if (i == 0)
+        {
+            Omin = SampleOpticalThickness(start);
+            fmin = f(minZ,
+                     minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius,
+                     Visibility(start));
+        }
+        
+        float Zmid = (minZ + maxZ) / 2.f;
+    
+        float fmax = f(maxZ,
+                        minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius,
+                        Visibility(end));
+        
+        float foo =
+            fmin
+            + 4 * f(Zmid,
+                    minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius,
+                    Visibility((start + end) / 2.f))
+            + fmax;
+    
+        integral += ((maxZ - minZ) / 6.f) * foo;
+        Omin = Omax;
+        fmin = fmax;
     }
 
     return integral;
@@ -258,7 +256,7 @@ float3 SimpsonScatteredLight(
 {
     float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
     
-    float transmissionFactor = IntegrateSimpsonTransmittanceRayMarch(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius);
+    float transmissionFactor = IntegrateSimpsonTransmittance(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius);
 
     return albedo * phase * irradiance * transmissionFactor
         + fadedExtinction * g_Albedo * irradiance * phase * 0.01;

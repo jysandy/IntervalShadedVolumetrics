@@ -41,7 +41,7 @@ float calculateShadowFactor(
     float2 zPartials = constant * mul(float2(dpdx.z, dpdy.z), right);
     
     // TODO: Pass the shadow map resolution through
-    const float dx = 1.f / 512.f;
+    const float dx = 1.f / 2048.f;
     
     // Use a dithered pattern to obtain a result similar to 16 
     // samples per pixel.

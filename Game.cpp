@@ -336,8 +336,8 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
     m_volShadowMap->Render(cl,
-        [constants, &cl, &bm, this](Matrix view, 
-            Matrix proj, 
+        [constants, &cl, &bm, this](Matrix view,
+            Matrix proj,
             DirectX::BoundingOrientedBox bb,
             float nearPlane)
         {
@@ -392,7 +392,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Extinction Falloff", &m_guiExtinctionFalloffFactor, 0, 10);
         ImGui::SliderFloat("Scattering Anisotropy", &m_guiAnisotropy, 0, 1);
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
-        const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)", "Wasted Pixels"};
+        const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)", "Wasted Pixels" };
         ImGui::Combo("Rendering Method", &m_guiRenderingMethod, items, IM_ARRAYSIZE(items));
         ImGui::SliderInt("Step Count", &m_guiStepCount, 1, 10);
 
@@ -406,12 +406,13 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::ColorEdit3("Color", &m_guiLightColor.x);
         ImGui::Checkbox("Debug Volumetric Shadows", &m_guiDebugVolShadows);
         ImGui::Checkbox("Soft Shadows", &m_guiSoftShadows);
-                                                                                                                                        
+
         ImGui::TreePop();
     }
 
     if (ImGui::TreeNodeEx("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
     {
+        ImGui::Checkbox("Enabled", &m_guiSimulationEnabled);
         ImGui::DragFloat3("Target Position", &m_guiTargetWorld.x, 0.05f, -100.f, 100.f);
         ImGui::TreePop();
     }
@@ -539,11 +540,14 @@ void Game::Render()
     m_didShoot = 0;
 
 
-    PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Simulate particles");
+    if (m_guiSimulationEnabled)
+    {
+        PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Simulate particles");
 
-    SimulateParticles(cl, constants);
+        SimulateParticles(cl, constants);
 
-    PIXEndEvent(cl);
+        PIXEndEvent(cl);
+    }
 
     PIXBeginEvent(cl, PIX_COLOR_DEFAULT, L"Volumetric shadow rendering");
 

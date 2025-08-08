@@ -219,7 +219,7 @@ private:
     float m_guiAnisotropy = 0.2f;
     bool m_guiDebugVolShadows = false;
     bool m_guiSoftShadows = false;
-
+    bool m_guiSimulationEnabled = true;
     
     int m_guiRenderingMethod = 2;
     int m_guiStepCount = 1;

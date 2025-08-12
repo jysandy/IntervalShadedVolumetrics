@@ -58,17 +58,17 @@ struct InstanceData
 
 struct VertexType
 {
-    float4 Position : SV_Position;
+    min16float4 Position : SV_Position;
     
     // This is the vertex attribute that gets interpolated
     // to form the depth values. 
     // TODO: Rename this to something reasonable
-    float4 A : POSITION1;
+    min16float4 A : POSITION1;
     
-    nointerpolation float ExtinctionScale : EXTINCTION;
-    nointerpolation float3 WorldPosition : WORLDPOS;
+    nointerpolation min16float ExtinctionScale : EXTINCTION;
+    nointerpolation min16float3 WorldPosition : WORLDPOS;
 };
 
-static const float EXTINCTION_SCALE = 1 / 10000.f;
+static const min16float EXTINCTION_SCALE = 1 / 10000.0;
 
 #endif

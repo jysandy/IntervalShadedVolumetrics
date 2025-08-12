@@ -11,39 +11,39 @@ SamplerComparisonState ShadowMapSampler : register(s1, space0);
 
 struct BlendOutput
 {
-    float4 Color : SV_Target0;
-    float Depth : SV_Depth;
+    min16float4 Color : SV_Target0;
+    min16float Depth : SV_Depth;
 };
 
-static const float MIN_OT = 0.001f;
+static const min16float MIN_OT = 0.001;
 
 // The Henyey-Greenstein phase function             
 // TODO: Should this be wavelength dependent?
-float HGPhase(float3 L, float3 V, float asymmetry)
+min16float HGPhase(min16float3 L, min16float3 V, min16float asymmetry)
 {
-    float constant = 1.f / (4 * PI);
-    float g = asymmetry;
-    float numerator = 1 - g * g;
-    float cosTheta = clamp(dot(L, V), -1.f, 1.f);
-    float denominator = pow(1 + g * g + 2 * g * cosTheta, 1.5);
+    min16float constant = 1 / (4 * PI);
+    min16float g = asymmetry;
+    min16float numerator = 1 - g * g;
+    min16float cosTheta = clamp(dot(L, V), -1, 1);
+    min16float denominator = pow(1 + g * g + 2 * g * cosTheta, 1.5);
     return constant * numerator / denominator;
 }
 
-float WeightedPhase(float3 L, float3 V, float asymmetry, float directionality)
+min16float WeightedPhase(min16float3 L, min16float3 V, min16float asymmetry, min16float directionality)
 {
-    float constant = 1.f / (4 * PI);
+    min16float constant = 1 / (4 * PI);
     
-    float hg = HGPhase(L, V, asymmetry);
+    min16float hg = HGPhase(L, V, asymmetry);
     
     return lerp(constant, hg, directionality);
 }
 
-float SampleOpticalThickness(float3 worldPosition)
+min16float SampleOpticalThickness(min16float3 worldPosition)
 {
-    float4 transformed = mul(float4(worldPosition, 1), g_VolumetricShadowTransform);
+    min16float4 transformed = mul(min16float4(worldPosition, 1), g_VolumetricShadowTransform);
     
     transformed /= transformed.w;
-    float3 uvw = transformed.xyz;
+    min16float3 uvw = transformed.xyz;
     
     uvw.xy = 1 - uvw.xy; // why is this necessary?
     
@@ -51,43 +51,43 @@ float SampleOpticalThickness(float3 worldPosition)
     return VolumetricShadowMap.Sample(LinearSampler, uvw);
 }
 
-float VanillaTransmittance(float extinction, float opticalDepth)
+min16float VanillaTransmittance(min16float extinction, min16float opticalDepth)
 {
     return exp(-extinction * opticalDepth);
 }
 
-float FadedTransmittance(
-    float Zmin,
-    float Zmax,
-    float d,
-    float cosAlpha,
-    float extinction,
-    float falloffRadius
+min16float FadedTransmittance(
+    min16float Zmin,
+    min16float Zmax,
+    min16float d,
+    min16float cosAlpha,
+    min16float extinction,
+    min16float falloffRadius
 )
 {
     return FadedTransmittanceTv2(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
 }
 
-float IntegrateVanillaTransmittance(
-    float3 minpoint,
-    float3 maxpoint,
-    float extinction,
-    float3 centrePos
+min16float IntegrateVanillaTransmittance(
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float extinction,
+    min16float3 centrePos
 )
 {
-    float Zmin = length(g_CameraPosition - minpoint);
-    float Zmax = length(g_CameraPosition - maxpoint);
+    min16float Zmin = length(g_CameraPosition - minpoint);
+    min16float Zmax = length(g_CameraPosition - maxpoint);
     
-    float Omin = SampleOpticalThickness(minpoint);
-    float Omax = SampleOpticalThickness(maxpoint);
+    min16float Omin = SampleOpticalThickness(minpoint);
+    min16float Omax = SampleOpticalThickness(maxpoint);
     
-    float denominator = ZeroCutoff(Omax - Omin + extinction * (Zmax - Zmin), EPSILON);
+    min16float denominator = ZeroCutoff(Omax - Omin + extinction * (Zmax - Zmin), EPSILON);
     
-    float firstExponent = extinction * Zmax + Omax;
-    float secondExponent = extinction * Zmin + Omin;
-    float thirdExponent = -extinction * Zmax - Omax - Omin;
+    min16float firstExponent = extinction * Zmax + Omax;
+    min16float secondExponent = extinction * Zmin + Omin;
+    min16float thirdExponent = -extinction * Zmax - Omax - Omin;
     
-    float numerator
+    min16float numerator
         = extinction * (Zmin - Zmax) * (exp(firstExponent) - exp(secondExponent)) * exp(thirdExponent);
     
     // Output must be non-negative
@@ -96,37 +96,37 @@ float IntegrateVanillaTransmittance(
     return numerator / denominator;
 }
 
-float3 VanillaScatteredLight(
-    float3 minpoint,
-    float3 maxpoint,
-    float extinction,
-    float3 centrePos,
-    float3 albedo,
-    float3 irradiance,
-    float3 L,
-    float3 V
+min16float3 VanillaScatteredLight(
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float extinction,
+    min16float3 centrePos,
+    min16float3 albedo,
+    min16float3 irradiance,
+    min16float3 L,
+    min16float3 V
 )
 {
-    float phase = WeightedPhase(L, V, g_ScatteringAsymmetry, g_Anisotropy);
+    min16float phase = WeightedPhase(L, V, g_ScatteringAsymmetry, g_Anisotropy);
     
-    float transmissionFactor = IntegrateVanillaTransmittance(minpoint, maxpoint, extinction, centrePos);
+    min16float transmissionFactor = IntegrateVanillaTransmittance(minpoint, maxpoint, extinction, centrePos);
 
     return albedo * phase * irradiance * 1 * transmissionFactor;
 }
 
-float IntegrateTaylorTransmittance(
-    float3 minpoint,
-    float3 maxpoint,
-    float Zmin,
-    float Zmax,
-    float d,
-    float cosAlpha,
-    float extinction,
-    float falloffRadius
+min16float IntegrateTaylorTransmittance(
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float Zmin,
+    min16float Zmax,
+    min16float d,
+    min16float cosAlpha,
+    min16float extinction,
+    min16float falloffRadius
 )
 {
-    float Omin = SampleOpticalThickness(minpoint);
-    float Omax = SampleOpticalThickness(maxpoint);
+    min16float Omin = SampleOpticalThickness(minpoint);
+    min16float Omax = SampleOpticalThickness(maxpoint);
     
     return max(0, IntegrateTaylorSeries(
         4,
@@ -140,53 +140,53 @@ float IntegrateTaylorTransmittance(
         falloffRadius));
 }
 
-float Visibility(float3 worldPosition)
+min16float Visibility(min16float3 worldPosition)
 {
-    if (g_SoftShadows)
-    {
-        return calculateShadowFactor(ShadowMap,
-            ShadowMapSampler,
-            g_ShadowTransform, worldPosition);        
-    }
-    else
-    {   
+    //if (g_SoftShadows)
+    //{
+    //    return calculateShadowFactor(ShadowMap,
+    //        ShadowMapSampler,
+    //        g_ShadowTransform, worldPosition);        
+    //}
+    //else
+    //{   
         return calculateShadowFactorNoLargeKernel(ShadowMap,
             ShadowMapSampler,
             g_ShadowTransform, worldPosition);
-    }
+    //}
 }
 
-float IntegrateSimpsonTransmittance(
-    float3 minpoint,
-    float3 maxpoint,
-    float Zmin,
-    float Zmax,
-    float3 centrePos,
-    float extinction,
-    float falloffRadius,
-    float3 V
+min16float IntegrateSimpsonTransmittance(
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float Zmin,
+    min16float Zmax,
+    min16float3 centrePos,
+    min16float extinction,
+    min16float falloffRadius,
+    min16float3 V
 )
 {
-    float integral = 0;
+    min16float integral = 0;
     
-    float stepSize = (Zmax - Zmin) / (float) g_StepCount;
+    min16float stepSize = (Zmax - Zmin) / (min16float) g_StepCount;
 
-    float fmin = 0;
-    float Omin = 0;
+    min16float fmin = 0;
+    min16float Omin = 0;
     
     for (int i = 0; i < g_StepCount; i++)
     {
-        float3 start = minpoint + i * stepSize * (-V);
-        float3 end = minpoint + (i + 1) * stepSize * (-V);
+        min16float3 start = minpoint + i * stepSize * (-V);
+        min16float3 end = minpoint + (i + 1) * stepSize * (-V);
         
-        float minZ = Zmin + i * stepSize;
-        float maxZ = Zmin + (i + 1) * stepSize;
+        min16float minZ = Zmin + i * stepSize;
+        min16float maxZ = Zmin + (i + 1) * stepSize;
         
-        float3 toCentre = normalize(centrePos - start);
-        float d = length(centrePos - start);
-        float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+        min16float3 toCentre = normalize(centrePos - start);
+        min16float d = length(centrePos - start);
+        min16float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
         
-        float Omax = SampleOpticalThickness(end);
+        min16float Omax = SampleOpticalThickness(end);
         if (i == 0)
         {
             Omin = SampleOpticalThickness(start);
@@ -195,14 +195,14 @@ float IntegrateSimpsonTransmittance(
                      Visibility(start));
         }
         
-        float fmax = f(maxZ,
+        min16float fmax = f(maxZ,
                         minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius,
                         Visibility(end));
         
-        integral += ((maxZ - minZ) / 6.f) * (fmin
-                                             + 4 * f((minZ + maxZ) / 2.f,
+        integral += ((maxZ - minZ) / 6) * (fmin
+                                             + 4 * f((minZ + maxZ) / 2,
                                                      minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius,
-                                                     Visibility((start + end) / 2.f))
+                                                     Visibility((start + end) / 2))
                                              + fmax);
         Omin = Omax;
         fmin = fmax;
@@ -211,79 +211,79 @@ float IntegrateSimpsonTransmittance(
     return integral;
 }
 
-float3 TaylorScatteredLight(
-    float3 albedo,
-    float3 irradiance,
-    float3 L,
-    float3 V,
-    float asymmetry,
-    float3 minpoint,
-    float3 maxpoint,
-    float Zmin,
-    float Zmax,
-    float d,
-    float cosAlpha,
-    float extinction,
-    float falloffRadius
+min16float3 TaylorScatteredLight(
+    min16float3 albedo,
+    min16float3 irradiance,
+    min16float3 L,
+    min16float3 V,
+    min16float asymmetry,
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float Zmin,
+    min16float Zmax,
+    min16float d,
+    min16float cosAlpha,
+    min16float extinction,
+    min16float falloffRadius
 )
 {
-    float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
+    min16float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
     
-    float transmissionFactor = IntegrateTaylorTransmittance(minpoint, maxpoint, Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
+    min16float transmissionFactor = IntegrateTaylorTransmittance(minpoint, maxpoint, Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
 
     return albedo * phase * irradiance * 1 * transmissionFactor;
 }
 
-float3 SimpsonScatteredLight(
-    float3 albedo,
-    float3 irradiance,
-    float3 L,
-    float3 V,
-    float asymmetry,
-    float3 minpoint,
-    float3 maxpoint,
-    float Zmin,
-    float Zmax,
-    float3 centrePos,
-    float extinction,
-    float falloffRadius,
-    float d, 
-    float cosAlpha
+min16float3 SimpsonScatteredLight(
+    min16float3 albedo,
+    min16float3 irradiance,
+    min16float3 L,
+    min16float3 V,
+    min16float asymmetry,
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float Zmin,
+    min16float Zmax,
+    min16float3 centrePos,
+    min16float extinction,
+    min16float falloffRadius,
+    min16float d, 
+    min16float cosAlpha
 )
 {
-    float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
+    min16float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
     
-    float transmissionFactor = IntegrateSimpsonTransmittance(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius, V);
+    min16float transmissionFactor = IntegrateSimpsonTransmittance(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius, V);
 
     
-    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    min16float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     return albedo * phase * irradiance * transmissionFactor
         + fadedExtinction * g_Albedo * irradiance * phase * 0.01;
 }
 
-void ComputeDebugEquation(out float3 Cscat, out float Tv,
-    float3 minpoint,
-    float3 maxpoint)
+void ComputeDebugEquation(out min16float3 Cscat, out min16float Tv,
+    min16float3 minpoint,
+    min16float3 maxpoint)
 {
     Cscat = 0.xxx;
     Tv = 1;
     
     
-    float3 avg = (minpoint + maxpoint) / 2.f;
+    min16float3 avg = (minpoint + maxpoint) / 2;
     
-    float od = SampleOpticalThickness(avg);
+    min16float od = SampleOpticalThickness(avg);
     
     if (od < 0)
     {
-        Cscat = float3(0, 0, 1);
+        Cscat = min16float3(0, 0, 1);
         return;
     }
     
-    float transmittance = exp(-od);
+    min16float transmittance = exp(-od);
     
     if (transmittance > 1)
     {
-        Cscat = float3(0, 0, 1);
+        Cscat = min16float3(0, 0, 1);
         return;
     }
     
@@ -292,20 +292,20 @@ void ComputeDebugEquation(out float3 Cscat, out float Tv,
     Tv = lerp(0.95, 1, Tv);
 }
 
-void ComputeVanillaEquation(out float3 Cscat, out float Tv,
-    float3 minpoint,
-    float3 maxpoint,
-    float3 centrePos,
-    float extinction
+void ComputeVanillaEquation(out min16float3 Cscat, out min16float Tv,
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float3 centrePos,
+    min16float extinction
     )
 {
-    float opticalDepth = length(minpoint - maxpoint);
+    min16float opticalDepth = length(minpoint - maxpoint);
     
     Tv = VanillaTransmittance(extinction, opticalDepth);
     
-    float3 V = normalize(g_CameraPosition - minpoint);
-    float3 L = normalize(-g_LightDirection);
-    float3 R = g_LightBrightness * g_LightColor;
+    min16float3 V = normalize(g_CameraPosition - minpoint);
+    min16float3 L = normalize(-g_LightDirection);
+    min16float3 R = g_LightBrightness * g_LightColor;
     
     Cscat = VanillaScatteredLight(minpoint, maxpoint, extinction, centrePos, g_Albedo, R, L, V);
     
@@ -315,30 +315,30 @@ void ComputeVanillaEquation(out float3 Cscat, out float Tv,
     }
 }
 
-void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
-    float3 minpoint,
-    float3 maxpoint,
-    float3 centrePos,
-    float extinction
+void ComputeTaylorSeriesEquation(out min16float3 Cscat, out min16float Tv,
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float3 centrePos,
+    min16float extinction
     )
 {
     Cscat = 0.xxx;
     Tv = 1;
     
-    float Zmin = length(g_CameraPosition - minpoint);
-    float Zmax = length(g_CameraPosition - maxpoint);
+    min16float Zmin = length(g_CameraPosition - minpoint);
+    min16float Zmax = length(g_CameraPosition - maxpoint);
     
     if (abs(Zmin - Zmax) < EPSILON)
     {
         return;
     }
     
-    float3 V = normalize(g_CameraPosition - minpoint);
-    float3 toCentre = normalize(centrePos - minpoint);
-    float d = length(centrePos - minpoint);
-    float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+    min16float3 V = normalize(g_CameraPosition - minpoint);
+    min16float3 toCentre = normalize(centrePos - minpoint);
+    min16float d = length(centrePos - minpoint);
+    min16float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
     
-    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    min16float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     
     if (fadedExtinction > 0)
     {
@@ -349,8 +349,8 @@ void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
                     extinction,
                     g_ExtinctionFalloffRadius);
         
-        float3 L = normalize(-g_LightDirection);
-        float3 R = g_LightBrightness * g_LightColor;
+        min16float3 L = normalize(-g_LightDirection);
+        min16float3 R = g_LightBrightness * g_LightColor;
         Cscat = TaylorScatteredLight(
                     g_Albedo,
                     R, L, V,
@@ -370,30 +370,30 @@ void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
     }
 }
 
-void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
-    float3 minpoint,
-    float3 maxpoint,
-    float3 centrePos,
-    float extinction
+void ComputeSimpsonEquation(out min16float3 Cscat, out min16float Tv,
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float3 centrePos,
+    min16float extinction
     )
 {
     Cscat = 0.xxx;
     Tv = 1;
     
-    float Zmin = length(g_CameraPosition - minpoint);
-    float Zmax = length(g_CameraPosition - maxpoint);
+    min16float Zmin = length(g_CameraPosition - minpoint);
+    min16float Zmax = length(g_CameraPosition - maxpoint);
     
     if (abs(Zmin - Zmax) < EPSILON)
     {
         return;
     }
     
-    float3 V = normalize(g_CameraPosition - minpoint);
-    float3 toCentre = normalize(centrePos - minpoint);
-    float d = length(centrePos - minpoint);
-    float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+    min16float3 V = normalize(g_CameraPosition - minpoint);
+    min16float3 toCentre = normalize(centrePos - minpoint);
+    min16float d = length(centrePos - minpoint);
+    min16float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
     
-    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    min16float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     
     // Any higher than this and a circle starts to appear
     if (ot > MIN_OT)
@@ -405,8 +405,8 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
                     extinction,
                     g_ExtinctionFalloffRadius);
         
-        float3 L = -g_LightDirection;
-        float3 R = g_LightBrightness * g_LightColor;
+        min16float3 L = -g_LightDirection;
+        min16float3 R = g_LightBrightness * g_LightColor;
         
         Cscat = SimpsonScatteredLight(
                     g_Albedo,
@@ -433,50 +433,50 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
     }
 }
 
-void ComputeWastedPixelsEquation(out float3 Cscat, out float Tv,
-    float3 minpoint,
-    float3 maxpoint,
-    float3 centrePos,
-    float extinction
+void ComputeWastedPixelsEquation(out min16float3 Cscat, out min16float Tv,
+    min16float3 minpoint,
+    min16float3 maxpoint,
+    min16float3 centrePos,
+    min16float extinction
     )
 {
     Cscat = 0.xxx;
     Tv = 1;
     
-    float Zmin = length(g_CameraPosition - minpoint);
-    float Zmax = length(g_CameraPosition - maxpoint);
+    min16float Zmin = length(g_CameraPosition - minpoint);
+    min16float Zmax = length(g_CameraPosition - maxpoint);
     
     if (abs(Zmin - Zmax) < EPSILON)
     {
         return;
     }
     
-    float3 V = normalize(g_CameraPosition - minpoint);
-    float3 toCentre = normalize(centrePos - minpoint);
-    float d = length(centrePos - minpoint);
-    float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+    min16float3 V = normalize(g_CameraPosition - minpoint);
+    min16float3 toCentre = normalize(centrePos - minpoint);
+    min16float d = length(centrePos - minpoint);
+    min16float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
     
-    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    min16float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     
     if (ot > MIN_OT)
     {
-        Tv = 0.f;
+        Tv = 0;
         Cscat = 1.xxx;    
     }
     else
     {
-        Cscat = float3(1, 0, 0);
-        Tv = 0.f;
+        Cscat = min16float3(1, 0, 0);
+        Tv = 0;
     }
 }
 
 BlendOutput Interval_PS(VertexType input)
 {
     
-    float4 a, b;
+    min16float4 a, b;
     {
-        float4 maxpoint = float4(input.A.xy, input.A.z, 1.0);
-        float4 minpoint = float4(input.A.xy, input.A.w, 1.0);
+        min16float4 maxpoint = min16float4(input.A.xy, input.A.z, 1.0);
+        min16float4 minpoint = min16float4(input.A.xy, input.A.w, 1.0);
     
         a = mul(minpoint, g_InverseViewProj);
         b = mul(maxpoint, g_InverseViewProj);
@@ -486,18 +486,18 @@ BlendOutput Interval_PS(VertexType input)
 
     BlendOutput ret;
     {
-        float4 reprojected = float4(mul(a, view).xyz, 1);
+        min16float4 reprojected = min16float4(mul(a, view).xyz, 1);
         reprojected.xyz *= -1;
         reprojected = mul(reprojected, persp);
         reprojected /= reprojected.w;
         ret.Depth = reprojected.z;
     }
     
-    float extinction = input.ExtinctionScale * g_Extinction * EXTINCTION_SCALE;
+    min16float extinction = input.ExtinctionScale * g_Extinction * EXTINCTION_SCALE;
     extinction = max(EPSILON, extinction);
     
-    float3 Cscat = 0.xxx;
-    float Tv = 1;
+    min16float3 Cscat = 0.xxx;
+    min16float Tv = 1;
 
     [branch]
     if (g_DebugVolShadows > 0)
@@ -521,7 +521,7 @@ BlendOutput Interval_PS(VertexType input)
         ComputeWastedPixelsEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);
     }
     
-    ret.Color = float4(Cscat, Tv);
+    ret.Color = min16float4(Cscat, Tv);
     
     return ret;
 }

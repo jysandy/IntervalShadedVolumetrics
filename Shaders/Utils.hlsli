@@ -1,16 +1,16 @@
 #ifndef __UTILS_HLSLI__
 #define __UTILS_HLSLI__
 
-static const float PI = 3.14159265359;
+static const min16float PI = 3.14159265359;
 
-static const float EPSILON = 0.00001;
+static const min16float EPSILON = 0.00001;
 
-float erf(float x)
+min16float erf(float x)
 {
     // Early return for large |x|.
     if (abs(x) >= 4.0)
     {
-        return asfloat((asuint(x) & 0x80000000) ^ asuint(1.0));
+        return min16float(asfloat((asuint(x) & 0x80000000) ^ asuint(1.0)));
     }
     // Polynomial approximation based on https://forums.developer.nvidia.com/t/optimized-version-of-single-precision-error-function-erff/40977
 
@@ -25,7 +25,7 @@ float erf(float x)
         const float A7 = 2.58907676e-5;
         float a = abs(x);
         float y = 1.0 - exp2(-(((((((A7 * a + A6) * a + A5) * a + A4) * a + A3) * a + A2) * a + A1) * a));
-        return asfloat((asuint(x) & 0x80000000) ^ asuint(y));
+        return min16float(asfloat((asuint(x) & 0x80000000) ^ asuint(y)));
     }
     else
     {
@@ -36,7 +36,7 @@ float erf(float x)
         const float A5 = 4.90735564e-3;
         const float A6 = -5.58853149e-4;
         float x2 = x * x;
-        return (((((A6 * x2 + A5) * x2 + A4) * x2 + A3) * x2 + A2) * x2 + A1) * x;
+        return min16float((((((A6 * x2 + A5) * x2 + A4) * x2 + A3) * x2 + A2) * x2 + A1) * x);
     }
 }
 

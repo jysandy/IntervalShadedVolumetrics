@@ -122,7 +122,7 @@ float Sigma_t(
     
     float extinction = sigma * exp(exponent);
     
-    return extinction;
+    return max(0, extinction);
 }
 
 float T_L(

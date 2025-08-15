@@ -258,7 +258,7 @@ float3 SimpsonScatteredLight(
     
     float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
     return albedo * phase * irradiance * transmissionFactor
-        + fadedExtinction * g_Albedo * irradiance * phase * 0.01;
+        + (fadedExtinction / extinction) * g_Albedo * irradiance * phase * 0.001 * g_MultiScatteringFactor;
 }
 
 void ComputeDebugEquation(out float3 Cscat, out float Tv,

@@ -38,6 +38,29 @@ float WeightedPhase(float3 L, float3 V, float asymmetry, float directionality)
     return lerp(constant, hg, directionality);
 }
 
+float ReflectivePhase(float3 L, float3 V, float3 N, float asymmetry, float directionality)
+{
+    float constant = 1.f / (4 * PI);
+    
+    float hg = HGPhase(L, V, asymmetry);
+    
+    float3 r = normalize(reflect(-L, N));
+    
+    float hg2 = 0;
+    
+    if (dot(L, N) > 0)
+    {
+        hg2 = lerp(hg, HGPhase(r, V, -abs(asymmetry)), g_Reflectivity);
+    }
+    else
+    {
+        hg2 = hg;
+    }
+    
+    
+    return lerp(constant, hg2, directionality);
+}
+
 float SampleOpticalThickness(float3 worldPosition)
 {
     float4 transformed = mul(float4(worldPosition, 1), g_VolumetricShadowTransform);
@@ -251,7 +274,9 @@ float3 SimpsonScatteredLight(
     float cosAlpha
 )
 {
-    float phase = WeightedPhase(L, V, asymmetry, g_Anisotropy);
+    // For this to work properly, N must be a function of z.
+    float3 N = normalize(minpoint - centrePos);
+    float phase = ReflectivePhase(L, V, N, asymmetry, g_Anisotropy);
     
     float transmissionFactor = IntegrateSimpsonTransmittance(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius, V);
 

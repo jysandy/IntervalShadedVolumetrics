@@ -43,7 +43,8 @@ cbuffer Constants : register(b0, space0)
     
     uint g_SoftShadows;
     uint g_StepCount;
-    float g_MultiScatteringFactor;
+    float g_MultiScatteringFactor; 
+    float g_Reflectivity;
 };
 
 struct InstanceData

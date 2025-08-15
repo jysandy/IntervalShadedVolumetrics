@@ -393,6 +393,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Scattering Anisotropy", &m_guiAnisotropy, 0, 1);
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
         ImGui::SliderFloat("Multi-Scattering Factor", &m_guiMultiScatteringFactor, 0, 1);
+        ImGui::SliderFloat("Reflectivity (Experimental)", &m_guiReflectivity, 0, 1);
         const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)", "Wasted Pixels" };
         ImGui::Combo("Rendering Method", &m_guiRenderingMethod, items, IM_ARRAYSIZE(items));
         ImGui::SliderInt("Step Count", &m_guiStepCount, 1, 10);
@@ -523,6 +524,7 @@ void Game::Render()
     constants.RenderingMethod = m_guiRenderingMethod;
     constants.StepCount = m_guiStepCount;
     constants.MultiScatteringFactor = m_guiMultiScatteringFactor;
+    constants.Reflectivity = m_guiReflectivity;
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
     constants.VolumetricShadowTransform = m_volShadowMap->GetShadowTransform().Transpose();

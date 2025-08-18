@@ -228,6 +228,8 @@ private:
     float m_guiMultiScatteringFactor;
     float m_guiReflectivity;
 
+    bool m_guiAnimateProps = true;
+
     // Bullet shooting state
     bool m_didShoot = false;
     DirectX::SimpleMath::Vector3 m_bulletRayStart;

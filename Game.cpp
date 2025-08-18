@@ -153,11 +153,19 @@ void Game::Update(DX::StepTimer const& timer)
 
     auto time = static_cast<float>(timer.GetTotalSeconds());
 
-    m_boxWorld = Matrix::CreateScale({ 1, 1, 1 })
-        * Matrix::CreateRotationZ(DirectX::XMConvertToRadians(45))
-        * Matrix::CreateRotationY(2 * sin(2 * time))
-        * Matrix::CreateRotationX(69 + 2 * sin(2 * time))
-        * Matrix::CreateTranslation(m_guiBoxPosition);
+    if (m_guiAnimateProps)
+    {
+        m_boxWorld = Matrix::CreateScale({ 1, 1, 1 })
+            * Matrix::CreateRotationZ(DirectX::XMConvertToRadians(45))
+            * Matrix::CreateRotationY(2 * sin(2 * time))
+            * Matrix::CreateRotationX(69 + 2 * sin(2 * time))
+            * Matrix::CreateTranslation(m_guiBoxPosition);
+    }
+    else
+    {
+        m_boxWorld = Matrix::CreateScale({ 1, 1, 1 })
+            * Matrix::CreateTranslation(m_guiBoxPosition);
+    }
 
     m_floorWorld = Matrix::CreateScale({ 50, 0.5, 50 })
         * Matrix::CreateTranslation({ 0, -10.f, 0 });
@@ -423,6 +431,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
     {
         ImGui::DragFloat3("Box Position", &m_guiBoxPosition.x, 0.05f, -100.f, 100.f);
         ImGui::DragFloat3("Sphere Position", &m_guiSpherePosition.x, 0.05f, -100.f, 100.f);
+        ImGui::Checkbox("Animate props", &m_guiAnimateProps);
         ImGui::TreePop();
     }
 

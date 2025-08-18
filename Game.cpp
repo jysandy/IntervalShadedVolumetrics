@@ -405,6 +405,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)", "Wasted Pixels" };
         ImGui::Combo("Rendering Method", &m_guiRenderingMethod, items, IM_ARRAYSIZE(items));
         ImGui::SliderInt("Step Count", &m_guiStepCount, 1, 10);
+        ImGui::Checkbox("Soft Shadows", &m_guiSoftShadows);
 
         ImGui::TreePop();
     }
@@ -415,7 +416,6 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Brightness", &m_guiLightBrightness, 0, 10);
         ImGui::ColorEdit3("Color", &m_guiLightColor.x);
         ImGui::Checkbox("Debug Volumetric Shadows", &m_guiDebugVolShadows);
-        ImGui::Checkbox("Soft Shadows", &m_guiSoftShadows);
 
         ImGui::TreePop();
     }

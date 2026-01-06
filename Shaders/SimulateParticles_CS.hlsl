@@ -39,7 +39,7 @@ void SimulateParticles_CS(uint3 DTid : SV_DispatchThreadID)
     float lineDistance = length(l2p);
     
     float3 bulletScatterVelocity 
-        = g_DidShoot * 0.5 * normalize(l2p) / pow(lineDistance, 2);
+        = g_DidShoot * 3 * normalize(l2p) / pow(lineDistance, 2);
     
     
     float3 dampingVelocityChange = (dampingForce / Instances[DTid.x].Mass) * g_DeltaTime;

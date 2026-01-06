@@ -962,9 +962,9 @@ void Game::CreateTetrahedronInstances()
     for (int i = 0; i < MaxParticles; i++)
     {
         Vector3 position;
-        position.x = RandomFloat() * 10.f - 5.f;
-        position.y = RandomFloat() * 10.f - 5.f;
-        position.z = RandomFloat() * 10.f - 5.f;
+        position.x = pow(-1, static_cast<int>(RandomFloat() * 2)) * (RandomFloat() * 5.f + 5.f);
+        position.y = pow(-1, static_cast<int>(RandomFloat() * 2)) * (RandomFloat() * 5.f + 5.f);
+        position.z = pow(-1, static_cast<int>(RandomFloat() * 2)) * (RandomFloat() * 5.f + 5.f);
 
         float densityMultiplier = std::abs(RandomFloat() * 10.f - 5.f);
 

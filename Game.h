@@ -212,11 +212,11 @@ private:
     DirectX::XMFLOAT3 m_guiLightColor = { 1, 0.8705882353, 0.6078431373 };
     float m_guiScatteringAsymmetry = 0.4f;
 
-    DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 0, 0 };
+    DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 6, 0 };
 
-    int m_guiParticleCount = 500;
-    float m_guiScale = 6.f;
-    float m_guiExtinctionFalloffFactor = 1.6f;
+    int m_guiParticleCount = 2000;
+    float m_guiScale = 12.f;
+    float m_guiExtinctionFalloffFactor = 1.2f;
 
     float m_guiAnisotropy = 0.2f;
     bool m_guiDebugVolShadows = false;
@@ -224,8 +224,8 @@ private:
     bool m_guiSimulationEnabled = true;
     
     int m_guiRenderingMethod = 2;
-    int m_guiStepCount = 1;
-    float m_guiMultiScatteringFactor;
+    int m_guiStepCount = 2;
+    float m_guiMultiScatteringFactor = 0.5;
     float m_guiReflectivity;
 
     bool m_guiAnimateProps = true;

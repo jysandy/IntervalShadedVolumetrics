@@ -281,7 +281,7 @@ float3 SimpsonScatteredLight(
     float transmissionFactor = IntegrateSimpsonTransmittance(minpoint, maxpoint, Zmin, Zmax, centrePos, extinction, falloffRadius, V);
 
     
-    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, falloffRadius);
     return albedo * phase * irradiance * transmissionFactor
         + (fadedExtinction / extinction) * g_Albedo * irradiance * phase * 0.001 * g_MultiScatteringFactor;
 }
@@ -344,7 +344,8 @@ void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
     float3 minpoint,
     float3 maxpoint,
     float3 centrePos,
-    float extinction
+    float extinction,
+    float scale
     )
 {
     Cscat = 0.xxx;
@@ -362,8 +363,9 @@ void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
     float3 toCentre = normalize(centrePos - minpoint);
     float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+    float falloffRadius = g_ExtinctionFalloffRadius * scale;
     
-    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    float fadedExtinction = Sigma_t(Zmin, (Zmin + Zmax) / 2.f, d, cosAlpha, extinction, falloffRadius);
     
     if (fadedExtinction > 0)
     {
@@ -372,7 +374,7 @@ void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
                     d,
                     cosAlpha,
                     extinction,
-                    g_ExtinctionFalloffRadius);
+                    falloffRadius);
         
         float3 L = normalize(-g_LightDirection);
         float3 R = g_LightBrightness * g_LightColor;
@@ -386,7 +388,7 @@ void ComputeTaylorSeriesEquation(out float3 Cscat, out float Tv,
                     d,
                     cosAlpha,
                     extinction,
-                    g_ExtinctionFalloffRadius);
+                    falloffRadius);
     
         if (any(isnan(Cscat)))
         {
@@ -399,7 +401,8 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
     float3 minpoint,
     float3 maxpoint,
     float3 centrePos,
-    float extinction
+    float extinction,
+    float scale
     )
 {
     Cscat = 0.xxx;
@@ -417,8 +420,9 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
     float3 toCentre = normalize(centrePos - minpoint);
     float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
+    float falloffRadius = g_ExtinctionFalloffRadius * scale;
     
-    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
     
     // Any higher than this and a circle starts to appear
     if (ot > MIN_OT)
@@ -428,7 +432,7 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
                     d,
                     cosAlpha,
                     extinction,
-                    g_ExtinctionFalloffRadius);
+                    falloffRadius);
         
         float3 L = -g_LightDirection;
         float3 R = g_LightBrightness * g_LightColor;
@@ -442,7 +446,7 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
                     Zmax,
                     centrePos,
                     extinction,
-                    g_ExtinctionFalloffRadius,
+                    falloffRadius,
                     d,
                     cosAlpha);
     
@@ -535,11 +539,11 @@ BlendOutput Interval_PS(VertexType input)
     }
     else if (g_RenderingMethod == 1)
     {
-        ComputeTaylorSeriesEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);
+        ComputeTaylorSeriesEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction, input.Scale);
     }
     else if (g_RenderingMethod == 2)
     {
-        ComputeSimpsonEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);
+        ComputeSimpsonEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction, input.Scale);
     }
     else if (g_RenderingMethod == 3)
     {

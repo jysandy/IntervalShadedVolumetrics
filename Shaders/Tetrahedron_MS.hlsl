@@ -170,7 +170,7 @@ void Tetrahedron_MS(
         InstanceData instanceData = GetInstanceData(instanceIndex);
         float3 worldPosition = instanceData.WorldPosition;
 
-        float scaleFactor = g_Scale;
+        float scaleFactor = g_Scale * instanceData.Scale;
         
         BoundingSphere bs;
         bs.xyz = worldPosition;
@@ -333,6 +333,7 @@ void Tetrahedron_MS(
             verts[prefixVertices + j].A = float4(proxy.pos[j].xy, proxy.pos[j].z, proxy.pos[j].w);
             verts[prefixVertices + j].ExtinctionScale = GetInstanceData(instanceIndex).ExtinctionScale;
             verts[prefixVertices + j].WorldPosition = GetInstanceData(instanceIndex).WorldPosition;
+            verts[prefixVertices + j].Scale = GetInstanceData(instanceIndex).Scale * g_Scale;
 
         }
 

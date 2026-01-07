@@ -69,4 +69,8 @@ void SimulateParticles_CS(uint3 DTid : SV_DispatchThreadID)
     
     Instances[DTid.x].Velocity += attractionAcceleration * g_DeltaTime + bulletScatterVelocity;    
     Instances[DTid.x].WorldPosition += Instances[DTid.x].Velocity * g_DeltaTime;
+    float scale = 0.2 + sin(2 * g_totalTime + DTid.x * 2.3);
+    scale *= scale;
+    Instances[DTid.x].Scale = scale;
+
 }

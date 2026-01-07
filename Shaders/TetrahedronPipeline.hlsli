@@ -54,7 +54,7 @@ struct InstanceData
     float3 Velocity;
     float Mass;
     float3 TargetPosition;
-    float Pad2;
+    float Scale;
     Quaternion RotationQuat;
 };
 
@@ -69,6 +69,7 @@ struct VertexType
     
     nointerpolation float ExtinctionScale : EXTINCTION;
     nointerpolation float3 WorldPosition : WORLDPOS;
+    nointerpolation float Scale : SCALE;
 };
 
 static const float EXTINCTION_SCALE = 1 / 10000.f;

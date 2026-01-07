@@ -56,7 +56,7 @@ float VolShadowMap_PS(VertexType input) : SV_Target
                     b.xyz,
                     extinction,
                     input.WorldPosition,
-                    g_ExtinctionFalloffRadius);
+                    g_ExtinctionFalloffRadius * input.Scale);
     }
     
     return tau;

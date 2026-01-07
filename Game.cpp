@@ -528,7 +528,7 @@ void Game::Render()
     constants.DebugVolShadows = m_guiDebugVolShadows ? 1 : 0;
     constants.SoftShadows = m_guiSoftShadows ? 1 : 0;
     constants.Scale = m_guiScale;
-    constants.ExtinctionFalloffRadius = m_guiScale * m_guiExtinctionFalloffFactor;
+    constants.ExtinctionFalloffRadius = m_guiExtinctionFalloffFactor;
     constants.Anisotropy = m_guiAnisotropy;
     constants.RenderingMethod = m_guiRenderingMethod;
     constants.StepCount = m_guiStepCount;

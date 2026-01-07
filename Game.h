@@ -86,7 +86,7 @@ public:
         DirectX::XMFLOAT3 Velocity;
         float Mass;
         DirectX::XMFLOAT3 TargetPosition;
-        float Pad;
+        float Scale = 1.f;
         DirectX::XMFLOAT4 RotationQuat;
     };
 
@@ -204,7 +204,7 @@ private:
 
 
     DirectX::XMFLOAT3 m_guiAlbedo = { 0.5f, 0.5f, 0.5f };
-    float m_guiExtinction = 15.f;
+    float m_guiExtinction = 20.f;
 
     DirectX::XMFLOAT3 m_guiLightDirection = { 0, -1, 1 };
     float m_guiLightBrightness = 2.f;
@@ -214,7 +214,7 @@ private:
 
     DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 6, 0 };
 
-    int m_guiParticleCount = 2000;
+    int m_guiParticleCount = 4000;
     float m_guiScale = 12.f;
     float m_guiExtinctionFalloffFactor = 1.2f;
 

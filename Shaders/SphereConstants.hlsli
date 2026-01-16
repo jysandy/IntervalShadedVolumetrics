@@ -1,7 +1,7 @@
-#ifndef __TETRAHEDRON_PIPELINE_HLSLI__
-#define __TETRAHEDRON_PIPELINE_HLSLI__
+#ifndef __SPHERE_CONSTANTS_HLSLI__
+#define __SPHERE_CONSTANTS_HLSLI__
 
-#include "Quaternion.hlsli"         
+#include "Utils.hlsli"
 #include "RenderingEquation.hlsli"
 
 cbuffer Constants : register(b0, space0)
@@ -52,7 +52,7 @@ cbuffer Constants : register(b0, space0)
     float g_Padding2;
 };
 
-struct InstanceData
+struct SphereInstanceData
 {
     float3 WorldPosition;
     float ExtinctionScale;
@@ -60,21 +60,7 @@ struct InstanceData
     float Mass;
     float3 TargetPosition;
     float Scale;
-    Quaternion RotationQuat;
-};
-
-struct VertexType
-{
-    float4 Position : SV_Position;
-    
-    // This is the vertex attribute that gets interpolated
-    // to form the depth values. 
-    // TODO: Rename this to something reasonable
-    float4 A : POSITION1;
-    
-    nointerpolation float ExtinctionScale : EXTINCTION;
-    nointerpolation float3 WorldPosition : WORLDPOS;
-    nointerpolation float Scale : SCALE;
+    float4 RotationQuat;
 };
 
 static const float EXTINCTION_SCALE = 1 / 10000.f;

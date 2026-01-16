@@ -92,6 +92,9 @@
     <None Include="Shaders\PBRLighting.hlsli" />
     <None Include="Shaders\ShadowMapping.hlsli" />
     <None Include="Shaders\CubeMap.hlsli" />
+    <None Include="PLAN.md" />
+    <None Include="Shaders\SpherePipeline.hlsli" />
+    <None Include="Shaders\SphereConstants.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />
@@ -101,5 +104,9 @@
     <FxCompile Include="Shaders\VolShadowMap_PS.hlsl" />
     <FxCompile Include="Shaders\Prop_VS.hlsl" />
     <FxCompile Include="Shaders\Prop_PS.hlsl" />
+    <FxCompile Include="Shaders\Sphere_MS.hlsl" />
+    <FxCompile Include="Shaders\Sphere_PS.hlsl" />
+    <FxCompile Include="Shaders\VolShadowSphere_MS.hlsl" />
+    <FxCompile Include="Shaders\VolShadowSphere_PS.hlsl" />
   </ItemGroup>
 </Project>

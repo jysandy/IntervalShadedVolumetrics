@@ -1,5 +1,5 @@
-#ifndef __SPHERE_CONSTANTS_HLSLI__
-#define __SPHERE_CONSTANTS_HLSLI__
+#ifndef __COMMON_PIPELINE_HLSLI__
+#define __COMMON_PIPELINE_HLSLI__
 
 #include "Utils.hlsli"
 #include "RenderingEquation.hlsli"
@@ -52,7 +52,7 @@ cbuffer Constants : register(b0, space0)
     float g_Padding2;
 };
 
-struct SphereInstanceData
+struct InstanceData
 {
     float3 WorldPosition;
     float ExtinctionScale;

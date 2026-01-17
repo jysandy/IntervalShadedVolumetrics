@@ -1,4 +1,4 @@
-#include "SphereConstants.hlsli"
+#include "CommonPipeline.hlsli"
 #include "SpherePipeline.hlsli"
 #include "ShadowMapping.hlsli"
 

@@ -248,7 +248,7 @@ void Game::RenderPropShadows(ID3D12GraphicsCommandList6* cl,
     m_propPipeline->World = m_boxWorld;
     m_propPipeline->View = m_shadowMap->GetView();
     m_propPipeline->Proj = m_shadowMap->GetProjection();
-    m_propPipeline->RenderingMethod = m_guiRenderingMethod;
+    m_propPipeline->RenderingMethod = static_cast<uint32_t>(m_guiRenderingMethod);
 
     m_propPipeline->ApplyShadows(cl);
     m_shadowMap->ClearAndSetDSV(cl);
@@ -284,7 +284,7 @@ void Game::RenderProps(ID3D12GraphicsCommandList6* cl,
     m_propPipeline->ShadowTransform = m_shadowMap->GetShadowTransform();
     m_propPipeline->VolumetricShadowTransform = m_volShadowMap->GetShadowTransform();
     m_propPipeline->VolumetricShadowMap = m_volShadowMap->TransitionAndGetSRV(cl);
-    m_propPipeline->RenderingMethod = m_guiRenderingMethod;
+    m_propPipeline->RenderingMethod = static_cast<uint32_t>(m_guiRenderingMethod);
 
     m_propPipeline->Apply(cl, true);
     auto bm = Gradient::BufferManager::Get();
@@ -312,9 +312,9 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
     bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 
-    m_tetRS.SetOnCommandList(cl);
+    m_particleRS.SetOnCommandList(cl);
     
-    if (m_guiRenderingMethod == 4) // Spherical Proxy
+    if (m_guiRenderingMethod == RenderingMethod::SphericalProxy)
     {
         m_spherePSO->Set(cl, false);
     }
@@ -323,11 +323,11 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
         m_tetPSO->Set(cl, false);
     }
 
-    m_tetRS.SetCBV(cl, 0, 0, constants);
-    m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
-    m_tetRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
-    m_tetRS.SetSRV(cl, 2, 0, m_volShadowMap->TransitionAndGetSRV(cl));
-    m_tetRS.SetSRV(cl, 3, 0, m_shadowMap->GetShadowMapSRV());
+    m_particleRS.SetCBV(cl, 0, 0, constants);
+    m_particleRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
+    m_particleRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
+    m_particleRS.SetSRV(cl, 2, 0, m_volShadowMap->TransitionAndGetSRV(cl));
+    m_particleRS.SetSRV(cl, 3, 0, m_shadowMap->GetShadowMapSRV());
 
     cl->DispatchMesh(
         Gradient::Math::DivRoundUp(
@@ -341,15 +341,15 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
 {
     auto bm = Gradient::BufferManager::Get();
 
-    m_tetRS.SetOnCommandList(cl);
+    m_particleRS.SetOnCommandList(cl);
     
-    if (m_guiRenderingMethod == 4) // Spherical Proxy
+    if (m_guiRenderingMethod == RenderingMethod::SphericalProxy)
     {
         m_volShadowSpherePSO->Set(cl, true);
     }
     else
     {
-        m_shadowPSO->Set(cl, true);
+        m_volShadowPSO->Set(cl, true);
     }
 
     bm->GetInstanceBuffer(m_tetInstances)->Resource.Transition(
@@ -357,8 +357,8 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
     bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 
-    m_tetRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
-    m_tetRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
+    m_particleRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
+    m_particleRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
     m_volShadowMap->Render(cl,
@@ -370,7 +370,7 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
             auto newConstants = constants;
 
             Matrix v;
-            if (m_guiRenderingMethod == 4)
+            if (m_guiRenderingMethod == RenderingMethod::SphericalProxy)
             {
                 v = view;
             }
@@ -394,7 +394,7 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
                 newConstants.CullingFrustumPlanes[i] = cullingPlanes[i];
             }
 
-            m_tetRS.SetCBV(cl, 0, 0, newConstants);
+            m_particleRS.SetCBV(cl, 0, 0, newConstants);
 
             cl->DispatchMesh(
                 Gradient::Math::DivRoundUp(
@@ -433,7 +433,7 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Multi-Scattering Factor", &m_guiMultiScatteringFactor, 0, 1);
         ImGui::SliderFloat("Reflectivity (Experimental)", &m_guiReflectivity, 0, 1);
         const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)", "Wasted Pixels", "Spherical Proxy" };
-        ImGui::Combo("Rendering Method", &m_guiRenderingMethod, items, IM_ARRAYSIZE(items));
+        ImGui::Combo("Rendering Method", reinterpret_cast<int*>(&m_guiRenderingMethod), items, IM_ARRAYSIZE(items));
         ImGui::SliderInt("Step Count", &m_guiStepCount, 1, 10);
         ImGui::Checkbox("Soft Shadows", &m_guiSoftShadows);
 
@@ -530,7 +530,7 @@ void Game::Render()
     auto proj = m_camera.GetCamera().GetProjectionMatrix();
 
     Matrix view;
-    if (m_guiRenderingMethod == 4)
+    if (m_guiRenderingMethod == RenderingMethod::SphericalProxy)
     {
         view = baseView;
     }
@@ -570,7 +570,7 @@ void Game::Render()
     constants.Scale = m_guiScale;
     constants.ExtinctionFalloffRadius = m_guiExtinctionFalloffFactor;
     constants.Anisotropy = m_guiAnisotropy;
-    constants.RenderingMethod = m_guiRenderingMethod;
+    constants.RenderingMethod = static_cast<uint32_t>(m_guiRenderingMethod);
     constants.StepCount = m_guiStepCount;
     constants.MultiScatteringFactor = m_guiMultiScatteringFactor;
     constants.Reflectivity = m_guiReflectivity;
@@ -865,20 +865,20 @@ void Game::CreateDeviceDependentResources()
     ImGui_ImplDX12_Init(&initInfo);
 
     // Tetrahedron PSO and root signature
-    m_tetRS.AddCBV(0, 0);
-    m_tetRS.AddRootSRV(0, 0);   // instances
-    m_tetRS.AddRootSRV(1, 0);   // indices
-    m_tetRS.AddSRV(2, 0);       // volumetric shadow map
-    m_tetRS.AddSRV(3, 0);       // regular shadow map
+    m_particleRS.AddCBV(0, 0);
+    m_particleRS.AddRootSRV(0, 0);   // instances
+    m_particleRS.AddRootSRV(1, 0);   // indices
+    m_particleRS.AddSRV(2, 0);       // volumetric shadow map
+    m_particleRS.AddSRV(3, 0);       // regular shadow map
 
-    m_tetRS.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(0,
+    m_particleRS.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(0,
         D3D12_FILTER_MIN_MAG_MIP_LINEAR,
         D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
         D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
         D3D12_TEXTURE_ADDRESS_MODE_CLAMP),
         0, 0);
 
-    m_tetRS.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(1,
+    m_particleRS.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(1,
         D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
         D3D12_TEXTURE_ADDRESS_MODE_BORDER,
         D3D12_TEXTURE_ADDRESS_MODE_BORDER,
@@ -889,14 +889,14 @@ void Game::CreateDeviceDependentResources()
         1,
         0);
 
-    m_tetRS.Build(device);
+    m_particleRS.Build(device);
 
     D3DX12_MESH_SHADER_PIPELINE_STATE_DESC psoDesc = Gradient::PipelineState::GetDefaultMeshDesc();
 
     auto msData = DX::ReadData(L"Tetrahedron_MS.cso");
     auto psData = DX::ReadData(L"Interval_PS.cso");
 
-    psoDesc.pRootSignature = m_tetRS.Get();
+    psoDesc.pRootSignature = m_particleRS.Get();
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     // TODO: Maybe reverse the winding order in the mesh shader instead of doing this?
     psoDesc.RasterizerState = DirectX::CommonStates::CullNone;
@@ -928,15 +928,15 @@ void Game::CreateDeviceDependentResources()
     shadowBlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
     psoDesc.BlendState = shadowBlendState;
 
-    m_shadowPSO = std::make_unique<Gradient::PipelineState>(psoDesc);
-    m_shadowPSO->Build(device);
+    m_volShadowPSO = std::make_unique<Gradient::PipelineState>(psoDesc);
+    m_volShadowPSO->Build(device);
 
     // Sphere PSO (main pass)
     auto sphereMSData = DX::ReadData(L"Sphere_MS.cso");
     auto spherePSData = DX::ReadData(L"Sphere_PS.cso");
 
     D3DX12_MESH_SHADER_PIPELINE_STATE_DESC spherePsoDesc = Gradient::PipelineState::GetDefaultMeshDesc();
-    spherePsoDesc.pRootSignature = m_tetRS.Get();
+    spherePsoDesc.pRootSignature = m_particleRS.Get();
     spherePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     spherePsoDesc.RasterizerState = DirectX::CommonStates::CullNone;
     spherePsoDesc.DepthStencilState = DirectX::CommonStates::DepthRead;
@@ -952,7 +952,7 @@ void Game::CreateDeviceDependentResources()
     auto volShadowSpherePSData = DX::ReadData(L"VolShadowSphere_PS.cso");
 
     D3DX12_MESH_SHADER_PIPELINE_STATE_DESC volShadowSpherePsoDesc = Gradient::PipelineState::GetDefaultMeshDesc();
-    volShadowSpherePsoDesc.pRootSignature = m_tetRS.Get();
+    volShadowSpherePsoDesc.pRootSignature = m_particleRS.Get();
     volShadowSpherePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
     volShadowSpherePsoDesc.RasterizerState = DirectX::CommonStates::CullNone;
     volShadowSpherePsoDesc.DepthStencilState = DirectX::CommonStates::DepthNone;

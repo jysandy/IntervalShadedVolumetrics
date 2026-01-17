@@ -1,11 +1,11 @@
-#include "SphereConstants.hlsli"
+#include "CommonPipeline.hlsli"
 #include "Culling.hlsli"
 #include "SpherePipeline.hlsli"
 
-StructuredBuffer<SphereInstanceData> Instances : register(t0, space0);
+StructuredBuffer<InstanceData> Instances : register(t0, space0);
 StructuredBuffer<uint> Indices : register(t1, space0);
 
-SphereInstanceData GetInstanceData(uint index)
+InstanceData GetInstanceData(uint index)
 {
     return Instances[Indices[index]];
 }
@@ -33,7 +33,7 @@ void Sphere_MS(
     
     if (instanceIndex < g_NumInstances)
     {
-        SphereInstanceData instanceData = GetInstanceData(instanceIndex);
+        InstanceData instanceData = GetInstanceData(instanceIndex);
         worldPosition = instanceData.WorldPosition;
         radius = g_Scale * instanceData.Scale;
         extinctionScale = instanceData.ExtinctionScale;

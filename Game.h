@@ -37,6 +37,15 @@ public:
     const float BrightnessScale = 10.f;
     const int MaxParticles = 65535;
 
+    enum class RenderingMethod : int
+    {
+        Vanilla = 0,
+        TaylorSeries = 1,
+        Simpson = 2,
+        WastedPixels = 3,
+        SphericalProxy = 4
+    };
+
     struct __declspec(align(16)) Constants
     {
         DirectX::XMMATRIX TargetWorld;
@@ -195,11 +204,11 @@ private:
     std::unique_ptr<ISV::ShadowMap> m_shadowMap;
     std::unique_ptr<ISV::VolShadowMap> m_volShadowMap;
 
-    Gradient::RootSignature m_tetRS;
+    Gradient::RootSignature m_particleRS;
     std::unique_ptr<Gradient::PipelineState> m_tetPSO;
 
     // Shadows use tetRS
-    std::unique_ptr<Gradient::PipelineState> m_shadowPSO;
+    std::unique_ptr<Gradient::PipelineState> m_volShadowPSO;
 
     // Sphere proxy PSOs
     std::unique_ptr<Gradient::PipelineState> m_spherePSO;
@@ -232,7 +241,7 @@ private:
     bool m_guiSoftShadows = false;
     bool m_guiSimulationEnabled = true;
     
-    int m_guiRenderingMethod = 4;
+    RenderingMethod m_guiRenderingMethod = RenderingMethod::SphericalProxy;
     int m_guiStepCount = 2;
     float m_guiMultiScatteringFactor = 0.5;
     float m_guiReflectivity;

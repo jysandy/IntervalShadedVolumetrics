@@ -387,6 +387,7 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     <None Include="Shaders\SpherePipeline.hlsli" />
     <None Include="Shaders\TetrahedronPipeline.hlsli" />
     <None Include="Shaders\Utils.hlsli" />
+    <None Include="Shaders\VolumetricLighting.hlsli" />
     <None Include="vcpkg-configuration.json" />
     <None Include="vcpkg.json" />
   </ItemGroup>

@@ -94,7 +94,8 @@
     <None Include="Shaders\CubeMap.hlsli" />
     <None Include="PLAN.md" />
     <None Include="Shaders\SpherePipeline.hlsli" />
-    <None Include="Shaders\SphereConstants.hlsli" />
+    <None Include="Shaders\CommonPipeline.hlsli" />
+    <None Include="Shaders\VolumetricLighting.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />

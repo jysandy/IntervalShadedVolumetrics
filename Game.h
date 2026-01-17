@@ -42,8 +42,9 @@ public:
         Vanilla = 0,
         TaylorSeries = 1,
         Simpson = 2,
-        WastedPixels = 3,
-        SphericalProxy = 4
+        WastedPixelsTet = 3,
+        SphericalProxy = 4,
+        WastedPixelsSphere = 5
     };
 
     struct __declspec(align(16)) Constants

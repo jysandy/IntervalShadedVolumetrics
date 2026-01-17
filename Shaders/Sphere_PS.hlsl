@@ -68,7 +68,30 @@ BlendOutput Sphere_PS(SphereVertexType input)
     
     BlendOutput ret;
     
-    if (!hit || tFar < 0)
+    float3 Cscat = 0.xxx;
+    float Tv = 1;
+    
+    // Wasted pixels mode, sphere not hit
+    if ((!hit || tFar < 0) && g_RenderingMethod == 5)
+    {
+        float4 clipPos = mul(float4(input.SphereCenter, 1), view);
+        clipPos = mul(clipPos, persp);
+        ret.Depth = clipPos.z / clipPos.w;
+        
+        ret.Color = float4(1, 0, 0, 0);
+        return ret;
+    }
+    // Wasted pixels mode, sphere hit
+    else if (g_RenderingMethod == 5)
+    {
+        float4 clipPos = mul(float4(input.SphereCenter, 1), view);
+        clipPos = mul(clipPos, persp);
+        ret.Depth = clipPos.z / clipPos.w;
+        
+        ret.Color = float4(0, 1, 0, 0);
+        return ret;
+    }
+    else if ((!hit || tFar < 0) && g_RenderingMethod == 4)
     {
         discard;
     }
@@ -88,10 +111,8 @@ BlendOutput Sphere_PS(SphereVertexType input)
     float extinction = input.ExtinctionScale * g_Extinction * EXTINCTION_SCALE;
     extinction = max(EPSILON, extinction);
     
-    float3 Cscat = 0.xxx;
-    float Tv = 1;
-    
     ComputeSphereSimpsonEquation(Cscat, Tv, minpoint, maxpoint, input.SphereCenter, extinction, input.SphereRadius);
+    
     
     ret.Color = float4(Cscat, Tv);
     

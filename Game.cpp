@@ -313,8 +313,9 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 
     m_particleRS.SetOnCommandList(cl);
-    
-    if (m_guiRenderingMethod == RenderingMethod::SphericalProxy)
+
+    if (m_guiRenderingMethod == RenderingMethod::SphericalProxy
+        || m_guiRenderingMethod == RenderingMethod::WastedPixelsSphere)
     {
         m_spherePSO->Set(cl, false);
     }
@@ -342,8 +343,8 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
     auto bm = Gradient::BufferManager::Get();
 
     m_particleRS.SetOnCommandList(cl);
-    
-    if (m_guiRenderingMethod == RenderingMethod::SphericalProxy)
+
+    if (m_guiRenderingMethod == RenderingMethod::SphericalProxy || m_guiRenderingMethod == RenderingMethod::WastedPixelsSphere)
     {
         m_volShadowSpherePSO->Set(cl, true);
     }
@@ -370,7 +371,8 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
             auto newConstants = constants;
 
             Matrix v;
-            if (m_guiRenderingMethod == RenderingMethod::SphericalProxy)
+            if (m_guiRenderingMethod == RenderingMethod::SphericalProxy
+                || m_guiRenderingMethod == RenderingMethod::WastedPixelsSphere)
             {
                 v = view;
             }
@@ -383,10 +385,10 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
             newConstants.Proj = proj.Transpose();
             newConstants.InverseViewProj = (v * proj).Invert().Transpose();
             newConstants.NearPlane = nearPlane;
-            
+
             newConstants.RenderTargetWidth = static_cast<float>(m_volShadowMap->Width);
             newConstants.RenderTargetHeight = static_cast<float>(m_volShadowMap->Width);
-            
+
             auto cullingPlanes
                 = Gradient::Math::GetPlanes(bb);
             for (int i = 0; i < 6; i++)
@@ -432,7 +434,14 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
         ImGui::SliderFloat("Scattering Asymmetry", &m_guiScatteringAsymmetry, -0.999, 0.999);
         ImGui::SliderFloat("Multi-Scattering Factor", &m_guiMultiScatteringFactor, 0, 1);
         ImGui::SliderFloat("Reflectivity (Experimental)", &m_guiReflectivity, 0, 1);
-        const char* items[] = { "Vanilla", "Faded Extinction (Taylor Series)", "Faded Extinction (Simpson's Rule)", "Wasted Pixels", "Spherical Proxy" };
+        const char* items[] = {
+            "Vanilla",
+            "Faded Extinction (Taylor Series)",
+            "Faded Extinction (Simpson's Rule)",
+            "Wasted Pixels (Tet)",
+            "Spherical Proxy",
+            "Wasted Pixels (Sphere)"
+        };
         ImGui::Combo("Rendering Method", reinterpret_cast<int*>(&m_guiRenderingMethod), items, IM_ARRAYSIZE(items));
         ImGui::SliderInt("Step Count", &m_guiStepCount, 1, 10);
         ImGui::Checkbox("Soft Shadows", &m_guiSoftShadows);
@@ -530,7 +539,8 @@ void Game::Render()
     auto proj = m_camera.GetCamera().GetProjectionMatrix();
 
     Matrix view;
-    if (m_guiRenderingMethod == RenderingMethod::SphericalProxy)
+    if (m_guiRenderingMethod == RenderingMethod::SphericalProxy 
+        || m_guiRenderingMethod == RenderingMethod::WastedPixelsSphere)
     {
         view = baseView;
     }

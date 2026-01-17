@@ -3,6 +3,8 @@
 
 #include "Utils.hlsli"
 
+#define PROXY_SIDES 8
+
 struct SphereVertexType
 {
     float4 Position : SV_Position;

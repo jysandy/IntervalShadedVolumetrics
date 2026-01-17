@@ -10,9 +10,10 @@ InstanceData GetInstanceData(uint index)
     return Instances[Indices[index]];
 }
 
-#define MAX_VERTS_PER_SPHERE 4
-#define MAX_TRIS_PER_SPHERE 2
+#define MAX_VERTS_PER_SPHERE PROXY_SIDES
+#define MAX_TRIS_PER_SPHERE (PROXY_SIDES - 2)
 #define NUM_THREADS 32
+#define PI 3.14159265359
 
 [numthreads(NUM_THREADS, 1, 1)]
 [outputtopology("triangle")]
@@ -29,7 +30,7 @@ void VolShadowSphere_MS(
     float3 worldPosition = float3(0, 0, 0);
     float radius = 1.0;
     float extinctionScale = 1.0;
-    float4 projectedCorners[4];
+    float4 projectedCorners[PROXY_SIDES];
     
     if (instanceIndex < g_NumInstances)
     {
@@ -66,18 +67,15 @@ void VolShadowSphere_MS(
                 float padding = 1.1;
                 float paddedRadius = radius * padding;
                 
-                float3 right = float3(1, 0, 0);
-                float3 up = float3(0, 1, 0);
-                
-                float3 viewCorners[4];
-                viewCorners[0] = viewCenter + paddedRadius * (-right - up);
-                viewCorners[1] = viewCenter + paddedRadius * ( right - up);
-                viewCorners[2] = viewCenter + paddedRadius * ( right + up);
-                viewCorners[3] = viewCenter + paddedRadius * (-right + up);
-                
-                for (int i = 0; i < 4; i++)
+                // Generate polygon vertices in a circle
+                for (int i = 0; i < PROXY_SIDES; i++)
                 {
-                    projectedCorners[i] = mul(float4(viewCorners[i], 1), persp);
+                    float angle = (2.0 * PI * i) / PROXY_SIDES;
+                    float x = cos(angle);
+                    float y = sin(angle);
+                    
+                    float3 viewCorner = viewCenter + paddedRadius * float3(x, y, 0);
+                    projectedCorners[i] = mul(float4(viewCorner, 1), persp);
                 }
             }
         }
@@ -87,8 +85,8 @@ void VolShadowSphere_MS(
         visible = false;
     }
     
-    uint vertex_counter = visible ? 4 : 0;
-    uint triangle_counter = visible ? 2 : 0;
+    uint vertex_counter = visible ? PROXY_SIDES : 0;
+    uint triangle_counter = visible ? (PROXY_SIDES - 2) : 0;
     
     uint numVerticesEmitted = WaveActiveSum(vertex_counter);
     uint numTrisEmitted = WaveActiveSum(triangle_counter);
@@ -100,7 +98,7 @@ void VolShadowSphere_MS(
         uint prefixVertices = WavePrefixSum(vertex_counter);
         uint prefixTris = WavePrefixSum(triangle_counter);
         
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < PROXY_SIDES; i++)
         {
             verts[prefixVertices + i].Position = projectedCorners[i];
             verts[prefixVertices + i].SphereCenter = worldPosition;
@@ -108,7 +106,10 @@ void VolShadowSphere_MS(
             verts[prefixVertices + i].ExtinctionScale = extinctionScale;
         }
         
-        tris[prefixTris + 0] = uint3(0, 1, 2) + prefixVertices.xxx;
-        tris[prefixTris + 1] = uint3(0, 2, 3) + prefixVertices.xxx;
+        // Generate triangle fan from polygon
+        for (int i = 0; i < PROXY_SIDES - 2; i++)
+        {
+            tris[prefixTris + i] = uint3(0, i + 1, i + 2) + prefixVertices.xxx;
+        }
     }
 }

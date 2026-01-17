@@ -14,8 +14,6 @@ struct BlendOutput
     float Depth : SV_Depth;
 };
 
-static const float MIN_OT = 0.001f;
-
 float HGPhase(float3 L, float3 V, float asymmetry)
 {
     float constant = 1.f / (4 * PI);
@@ -157,7 +155,7 @@ float3 SimpsonScatteredLight(
         + (fadedExtinction / extinction) * g_Albedo * irradiance * phase * 0.001 * g_MultiScatteringFactor;
 }
 
-void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
+void ComputeSphereSimpsonEquation(out float3 Cscat, out float Tv,
     float3 minpoint,
     float3 maxpoint,
     float3 centrePos,
@@ -182,28 +180,20 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
     float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
     float falloffRadius = g_ExtinctionFalloffRadius * scale;
     
-    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
+    // We don't use MIN_OT here since that optimization isn't really necessary    
+                                                                     
+    Tv = FadedTransmittance(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
     
-    if (ot > MIN_OT)
-    {
-        Tv = FadedTransmittance(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
-        
-        float3 L = -g_LightDirection;
-        float3 R = g_LightBrightness * g_LightColor;
-        
-        Cscat = SimpsonScatteredLight(
-                    g_Albedo, R, L, V, g_ScatteringAsymmetry,
-                    minpoint, maxpoint, Zmin, Zmax, centrePos,
-                    extinction, falloffRadius, d, cosAlpha);
+    float3 L = -g_LightDirection;
+    float3 R = g_LightBrightness * g_LightColor;
     
-        if (any(isnan(Cscat)))
-        {
-            Cscat = 0.xxx;
-        }
-    }
-    else
+    Cscat = SimpsonScatteredLight(
+                g_Albedo, R, L, V, g_ScatteringAsymmetry,
+                minpoint, maxpoint, Zmin, Zmax, centrePos,
+                extinction, falloffRadius, d, cosAlpha);
+    
+    if (any(isnan(Cscat)))
     {
-        Tv = 1;
         Cscat = 0.xxx;
     }
 }
@@ -250,7 +240,7 @@ BlendOutput Sphere_PS(SphereVertexType input)
     float3 Cscat = 0.xxx;
     float Tv = 1;
     
-    ComputeSimpsonEquation(Cscat, Tv, minpoint, maxpoint, input.SphereCenter, extinction, input.SphereRadius);
+    ComputeSphereSimpsonEquation(Cscat, Tv, minpoint, maxpoint, input.SphereCenter, extinction, input.SphereRadius);
     
     ret.Color = float4(Cscat, Tv);
     

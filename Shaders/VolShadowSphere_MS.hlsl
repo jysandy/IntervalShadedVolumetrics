@@ -57,6 +57,8 @@ void VolShadowSphere_MS(
         {
             float3 viewCenter = mul(float4(worldPosition, 1), view).xyz;
             
+            // Near plane culling is needed here to 
+            // avoid drawing spheres twice
             if (-viewCenter.z - radius < nearplane)
             {
                 visible = false;

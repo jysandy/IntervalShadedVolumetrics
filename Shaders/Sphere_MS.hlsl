@@ -56,13 +56,9 @@ void Sphere_MS(
         if (visible)
         {
             float3 viewCenter = mul(float4(worldPosition, 1), view).xyz;
-            
-            // Near plane culling - in right-handed view space, 
-            // objects in front of the camera have negative Z
-            if (-viewCenter.z - radius < nearplane)
-            {
-                visible = false;
-            }
+
+            // Unlike the tetrahedrons, the sphere proxies needn't 
+            // be culled at the near plane
             
             if (visible)
             {

@@ -1,6 +1,8 @@
 #include "TetrahedronPipeline.hlsli"
 #include "Utils.hlsli"
+#include "RenderingEquation.hlsli"
 
+SamplerState LinearSampler : register(s0, space0);
 
 float VanillaOpticalThickness(
     float3 minpoint,
@@ -27,7 +29,7 @@ float FadedOpticalThickness(
     float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(V, toCentre), -1, 1);
     
-    return FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
+    return FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius, LinearSampler);
 }
 
 float VolShadowMap_PS(VertexType input) : SV_Target

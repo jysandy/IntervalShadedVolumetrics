@@ -82,7 +82,8 @@ float IntegrateTaylorTransmittance(
         d,
         cosAlpha,
         extinction,
-        falloffRadius));
+        falloffRadius,
+        LinearSampler));
 }
 
 float3 TaylorScatteredLight(
@@ -243,7 +244,7 @@ void ComputeSimpsonEquation(out float3 Cscat, out float Tv,
     float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
     float falloffRadius = g_ExtinctionFalloffRadius * scale;
     
-    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
+    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius, LinearSampler);
     
     if (ot > MIN_OT)
     {
@@ -305,7 +306,7 @@ void ComputeWastedPixelsEquation(out float3 Cscat, out float Tv,
     float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
     
-    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius);
+    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius, LinearSampler);
     
     if (ot > MIN_OT)
     {

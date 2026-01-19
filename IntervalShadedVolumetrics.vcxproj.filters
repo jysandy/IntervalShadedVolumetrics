@@ -86,7 +86,6 @@
     <None Include="GetLibraries.ps1" />
     <None Include="Shaders\Culling.hlsli" />
     <None Include="Shaders\RenderingEquation.hlsli" />
-    <None Include="Shaders\Utils.hlsli" />
     <None Include="Shaders\PropPipeline.hlsli" />
     <None Include="Shaders\LightStructs.hlsli" />
     <None Include="Shaders\PBRLighting.hlsli" />
@@ -96,6 +95,7 @@
     <None Include="Shaders\SpherePipeline.hlsli" />
     <None Include="Shaders\CommonPipeline.hlsli" />
     <None Include="Shaders\VolumetricLighting.hlsli" />
+    <None Include="Shaders\Utils.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl" />

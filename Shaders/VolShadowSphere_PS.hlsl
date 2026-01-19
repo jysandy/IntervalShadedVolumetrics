@@ -1,5 +1,8 @@
 #include "CommonPipeline.hlsli"
 #include "SpherePipeline.hlsli"
+#include "RenderingEquation.hlsli"
+
+SamplerState LinearSampler : register(s0, space0);
 
 float VanillaOpticalThickness(
     float3 minpoint,
@@ -25,7 +28,7 @@ float FadedOpticalThicknessForShadow(
     float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(V, toCentre), -1, 1);
     
-    return FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
+    return FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius, LinearSampler);
 }
 
 float VolShadowSphere_PS(SphereVertexType input) : SV_Target

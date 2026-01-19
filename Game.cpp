@@ -30,6 +30,40 @@ inline void ThrowIfFfxFailed(FfxErrorCode error)
     }
 }
 
+float ComputeErf(float x)
+{
+    if (std::abs(x) >= 4.0f)
+    {
+        return (x < 0.0f) ? -1.0f : 1.0f;
+    }
+
+    // Polynomial approximation based on https://forums.developer.nvidia.com/t/optimized-version-of-single-precision-error-function-erff/40977
+    if (std::abs(x) > 1.0f)
+    {
+        const float A1 = 1.628459513f;
+        const float A2 = 9.15674746e-1f;
+        const float A3 = 1.54329389e-1f;
+        const float A4 = -3.51759829e-2f;
+        const float A5 = 5.66795561e-3f;
+        const float A6 = -5.64874616e-4f;
+        const float A7 = 2.58907676e-5f;
+        float a = std::abs(x);
+        float y = 1.0f - std::exp2(-(((((((A7 * a + A6) * a + A5) * a + A4) * a + A3) * a + A2) * a + A1) * a));
+        return (x < 0.0f) ? -y : y;
+    }
+    else
+    {
+        const float A1 = 1.128379121f;
+        const float A2 = -3.76123011e-1f;
+        const float A3 = 1.12799220e-1f;
+        const float A4 = -2.67030653e-2f;
+        const float A5 = 4.90735564e-3f;
+        const float A6 = -5.58853149e-4f;
+        float x2 = x * x;
+        return (((((A6 * x2 + A5) * x2 + A4) * x2 + A3) * x2 + A2) * x2 + A1) * x;
+    }
+}
+
 Microsoft::WRL::ComPtr<ID3D12PipelineState> CreateComputePipelineState(
     ID3D12Device* device,
     const std::wstring& shaderPath,
@@ -311,6 +345,7 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    m_erfTexture.Transition(cl, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     m_particleRS.SetOnCommandList(cl);
 
@@ -329,6 +364,7 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
     m_particleRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
     m_particleRS.SetSRV(cl, 2, 0, m_volShadowMap->TransitionAndGetSRV(cl));
     m_particleRS.SetSRV(cl, 3, 0, m_shadowMap->GetShadowMapSRV());
+    m_particleRS.SetSRV(cl, 4, 0, m_erfTextureSRV);
 
     cl->DispatchMesh(
         Gradient::Math::DivRoundUp(
@@ -357,9 +393,11 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+    m_erfTexture.Transition(cl, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     m_particleRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
     m_particleRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
+    m_particleRS.SetSRV(cl, 4, 0, m_erfTextureSRV);
 
     m_volShadowMap->SetLightDirection(constants.LightDirection);
     m_volShadowMap->Render(cl,
@@ -884,6 +922,7 @@ void Game::CreateDeviceDependentResources()
     m_particleRS.AddRootSRV(1, 0);   // indices
     m_particleRS.AddSRV(2, 0);       // volumetric shadow map
     m_particleRS.AddSRV(3, 0);       // regular shadow map
+    m_particleRS.AddSRV(4, 0);       // ERF lookup texture
 
     m_particleRS.AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC(0,
         D3D12_FILTER_MIN_MAG_MIP_LINEAR,
@@ -1017,10 +1056,9 @@ void Game::CreateDeviceDependentResources()
 
     ThrowIfFfxFailed(ffxParallelSortContextCreate(&m_parallelSortContext, &contextDesc));
 
-    CreateTetrahedronInstances();
+    CreateErfLookupTexture();
 }
 
-// Allocate all memory resources that change on a window SizeChanged event.
 void Game::CreateWindowSizeDependentResources()
 {
     auto device = m_deviceResources->GetD3DDevice();
@@ -1103,6 +1141,57 @@ void Game::CreateTetrahedronInstances()
     m_tetIndicesUAV = gmm->CreateBufferUAV(device, bm->GetInstanceBuffer(m_tetIndices)->Resource.Get(), sizeof(float));
 }
 
+void Game::CreateErfLookupTexture()
+{
+    auto device = m_deviceResources->GetD3DDevice();
+    auto cq = m_deviceResources->GetCommandQueue();
+    auto gmm = Gradient::GraphicsMemoryManager::Get();
+
+    std::vector<float> erfData;
+    erfData.resize(ERF_TEXTURE_WIDTH);
+    
+    const float erfRange = 8.0f;
+    for (int i = 0; i < ERF_TEXTURE_WIDTH; i++)
+    {
+        float x = (i / float(ERF_TEXTURE_WIDTH - 1)) * erfRange - (erfRange / 2.0f);
+        erfData[i] = ComputeErf(x);
+    }
+
+    auto erfTexDesc = CD3DX12_RESOURCE_DESC::Tex1D(
+        DXGI_FORMAT_R32_FLOAT,
+        ERF_TEXTURE_WIDTH,
+        1,
+        1
+    );
+
+    D3D12_CLEAR_VALUE clearValue = {};
+    clearValue.Format = DXGI_FORMAT_R32_FLOAT;
+
+    m_erfTexture.Create(device,
+        &erfTexDesc,
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        nullptr);
+    m_erfTexture.Get()->SetName(L"ERF Lookup Texture");
+
+    DirectX::ResourceUploadBatch uploadBatch(device);
+    uploadBatch.Begin();
+
+    D3D12_SUBRESOURCE_DATA textureData = {};
+    textureData.pData = erfData.data();
+    textureData.RowPitch = ERF_TEXTURE_WIDTH * sizeof(float);
+    textureData.SlicePitch = textureData.RowPitch;
+
+    uploadBatch.Upload(m_erfTexture.Get(), 0, &textureData, 1);
+    uploadBatch.Transition(m_erfTexture.Get(),
+        D3D12_RESOURCE_STATE_COPY_DEST,
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+    auto uploadFinished = uploadBatch.End(cq);
+    uploadFinished.wait();
+
+    m_erfTextureSRV = gmm->CreateSRV(device, m_erfTexture.Get());
+}
+
 void Game::CleanupResources()
 {
     m_renderTarget.reset();
@@ -1115,7 +1204,6 @@ void Game::CleanupResources()
 
 void Game::OnDeviceLost()
 {
-    // TODO: Add Direct3D resource cleanup here.
     CleanupResources();
 }
 

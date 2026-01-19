@@ -71,7 +71,7 @@ float FadedTransmittance(
     float falloffRadius
 )
 {
-    return FadedTransmittanceTv2(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius);
+    return FadedTransmittanceTv2(Zmin, Zmax, d, cosAlpha, extinction, falloffRadius, LinearSampler);
 }
 
 float Visibility(float3 worldPosition)
@@ -118,13 +118,13 @@ float IntegrateSimpsonTransmittance(
         if (i == 0)
         {
             Omin = SampleOpticalThickness(start);
-            fmin = f(minZ, minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius, Visibility(start));
+            fmin = f(minZ, minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius, Visibility(start), LinearSampler);
         }
         
-        float fmax = f(maxZ, minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius, Visibility(end));
+        float fmax = f(maxZ, minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius, Visibility(end), LinearSampler);
         
         integral += ((maxZ - minZ) / 6.f) * (fmin
-                                             + 4 * f((minZ + maxZ) / 2.f, minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius, Visibility((start + end) / 2.f))
+                                             + 4 * f((minZ + maxZ) / 2.f, minZ, maxZ, Omin, Omax, d, cosAlpha, extinction, falloffRadius, Visibility((start + end) / 2.f), LinearSampler)
                                              + fmax);
         Omin = Omax;
         fmin = fmax;

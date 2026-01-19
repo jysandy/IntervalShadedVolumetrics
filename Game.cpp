@@ -567,7 +567,7 @@ void Game::Render()
     constants.Albedo = m_guiAlbedo;
     constants.Extinction = m_guiExtinction;
     constants.CameraPosition = m_camera.GetCamera().GetPosition();
-    constants.LightBrightness = m_guiLightBrightness * BrightnessScale * 10;
+    constants.LightBrightness = m_guiLightBrightness * BrightnessScale;
     constants.LightDirection = lightDirection;
     constants.ScatteringAsymmetry = m_guiScatteringAsymmetry;
     constants.LightColor = m_guiLightColor;

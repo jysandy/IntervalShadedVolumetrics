@@ -426,6 +426,10 @@ void Game::RenderGUI(ID3D12GraphicsCommandList6* cl)
     if (ImGui::TreeNodeEx("Material", ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::SliderInt("Particle Count", &m_guiParticleCount, 1, MaxParticles);
+        if (m_guiParticleCount > MaxParticles)
+        {
+            m_guiParticleCount = MaxParticles;
+        }
         ImGui::SliderFloat("Scale", &m_guiScale, 0.01, 30);
         ImGui::ColorEdit3("Albedo", &m_guiAlbedo.x);
         ImGui::SliderFloat("Extinction", &m_guiExtinction, 0, 100);

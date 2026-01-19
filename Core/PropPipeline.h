@@ -28,7 +28,7 @@ namespace ISV
             DirectX::XMMATRIX ShadowTransform;
             DirectX::XMMATRIX VolumetricShadowTransform;
             DirectX::XMFLOAT3 CameraPosition;
-            float Pad;
+            uint32_t RenderingMethod;
         };
 
         using VertexType = DirectX::VertexPositionNormalTexture;
@@ -50,6 +50,7 @@ namespace ISV
         DirectX::SimpleMath::Matrix VolumetricShadowTransform;
         DirectX::SimpleMath::Vector3 CameraPosition;
         DirectionalLight Light;
+        uint32_t RenderingMethod;
 
     private:
         void InitializeRootSignature(ID3D12Device* device);

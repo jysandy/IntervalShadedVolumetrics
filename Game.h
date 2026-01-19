@@ -37,6 +37,16 @@ public:
     const float BrightnessScale = 10.f;
     const int MaxParticles = 65535;
 
+    enum class RenderingMethod : int
+    {
+        Vanilla = 0,
+        TaylorSeries = 1,
+        Simpson = 2,
+        WastedPixelsTet = 3,
+        SphericalProxy = 4,
+        WastedPixelsSphere = 5
+    };
+
     struct __declspec(align(16)) Constants
     {
         DirectX::XMMATRIX TargetWorld;
@@ -77,6 +87,11 @@ public:
         uint32_t StepCount = 1;
         float MultiScatteringFactor = 0.5;
         float Reflectivity = 0.f;
+
+        float RenderTargetWidth = 1920.f;
+        float RenderTargetHeight = 1080.f;
+        float Padding1 = 0.f;
+        float Padding2 = 0.f;
     };
 
     struct __declspec(align(16)) InstanceData
@@ -190,11 +205,15 @@ private:
     std::unique_ptr<ISV::ShadowMap> m_shadowMap;
     std::unique_ptr<ISV::VolShadowMap> m_volShadowMap;
 
-    Gradient::RootSignature m_tetRS;
+    Gradient::RootSignature m_particleRS;
     std::unique_ptr<Gradient::PipelineState> m_tetPSO;
 
     // Shadows use tetRS
-    std::unique_ptr<Gradient::PipelineState> m_shadowPSO;
+    std::unique_ptr<Gradient::PipelineState> m_volShadowPSO;
+
+    // Sphere proxy PSOs
+    std::unique_ptr<Gradient::PipelineState> m_spherePSO;
+    std::unique_ptr<Gradient::PipelineState> m_volShadowSpherePSO;
 
     Gradient::RootSignature m_keyWritingRS;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_keyWritingPSO;
@@ -215,15 +234,15 @@ private:
     DirectX::XMFLOAT3 m_guiTargetWorld = { 0, 6, 0 };
 
     int m_guiParticleCount = 4000;
-    float m_guiScale = 12.f;
-    float m_guiExtinctionFalloffFactor = 1.2f;
+    float m_guiScale = 4.4f;
+    float m_guiExtinctionFalloffFactor = 3.f;
 
     float m_guiAnisotropy = 0.2f;
     bool m_guiDebugVolShadows = false;
     bool m_guiSoftShadows = false;
     bool m_guiSimulationEnabled = true;
     
-    int m_guiRenderingMethod = 2;
+    RenderingMethod m_guiRenderingMethod = RenderingMethod::SphericalProxy;
     int m_guiStepCount = 2;
     float m_guiMultiScatteringFactor = 0.5;
     float m_guiReflectivity;

@@ -89,7 +89,7 @@ float4x4 QuatTo4x4(in Quaternion q)
 
 float4 PackQuaternion(in Quaternion q)
 {
-    Quaternion absQ = abs(q);
+    float4 absQ = float4(abs(q.x), abs(q.y), abs(q.z), abs(q.w));
     float absMaxComponent = max(max(absQ.x, absQ.y), max(absQ.z, absQ.w));
 
     uint maxCompIdx = 0;
@@ -135,13 +135,13 @@ Quaternion UnpackQuaternion(in float4 packed)
 
     Quaternion q;
     if (maxCompIdx == 0)
-        q = Quaternion(maxComponent, packed.xyz);
+        q = float4(maxComponent, packed.x, packed.y, packed.z);
     else if (maxCompIdx == 1)
-        q = Quaternion(packed.x, maxComponent, packed.yz);
+        q = float4(packed.x, maxComponent, packed.y, packed.z);
     else if (maxCompIdx == 2)
-        q = Quaternion(packed.xy, maxComponent, packed.z);
+        q = float4(packed.x, packed.y, maxComponent, packed.z);
     else
-        q = Quaternion(packed.xyz, maxComponent);
+        q = float4(packed.x, packed.y, packed.z, maxComponent);
 
     return q;
 }

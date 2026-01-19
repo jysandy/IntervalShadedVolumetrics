@@ -373,7 +373,9 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     <None Include="GetLibraries.ps1" />
     <None Include="LICENSE" />
     <None Include="packages.config" />
+    <None Include="PLAN.md" />
     <None Include="README.md" />
+    <None Include="Shaders\CommonPipeline.hlsli" />
     <None Include="Shaders\CubeMap.hlsli" />
     <None Include="Shaders\Culling.hlsli" />
     <None Include="Shaders\LightStructs.hlsli" />
@@ -382,8 +384,10 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
     <None Include="Shaders\Quaternion.hlsli" />
     <None Include="Shaders\RenderingEquation.hlsli" />
     <None Include="Shaders\ShadowMapping.hlsli" />
+    <None Include="Shaders\SpherePipeline.hlsli" />
     <None Include="Shaders\TetrahedronPipeline.hlsli" />
     <None Include="Shaders\Utils.hlsli" />
+    <None Include="Shaders\VolumetricLighting.hlsli" />
     <None Include="vcpkg-configuration.json" />
     <None Include="vcpkg.json" />
   </ItemGroup>
@@ -414,6 +418,14 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">SimulateParticles_CS</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
     </FxCompile>
+    <FxCompile Include="Shaders\Sphere_MS.hlsl">
+      <ShaderType>Mesh</ShaderType>
+      <EntryPointName>Sphere_MS</EntryPointName>
+    </FxCompile>
+    <FxCompile Include="Shaders\Sphere_PS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <EntryPointName>Sphere_PS</EntryPointName>
+    </FxCompile>
     <FxCompile Include="Shaders\Tetrahedron_MS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Mesh</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='GpuTrace|x64'">Mesh</ShaderType>
@@ -427,6 +439,14 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\bin\D
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VolShadowMap_PS</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VolShadowMap_PS</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\VolShadowSphere_MS.hlsl">
+      <ShaderType>Mesh</ShaderType>
+      <EntryPointName>VolShadowSphere_MS</EntryPointName>
+    </FxCompile>
+    <FxCompile Include="Shaders\VolShadowSphere_PS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <EntryPointName>VolShadowSphere_PS</EntryPointName>
     </FxCompile>
     <FxCompile Include="Shaders\WriteSortingKeys_CS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>

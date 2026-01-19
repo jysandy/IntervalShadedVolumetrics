@@ -85,6 +85,7 @@ namespace ISV
         constants.Light = Light;
         constants.ShadowTransform = ShadowTransform.Transpose();
         constants.VolumetricShadowTransform = VolumetricShadowTransform.Transpose();
+        constants.RenderingMethod = RenderingMethod;
 
         m_rootSignature.SetCBV(cl, 0, 0, constants); 
         m_rootSignature.SetSRV(cl, 0, 0, ShadowMap);
@@ -104,6 +105,7 @@ namespace ISV
         constants.WorldViewProj = (World * View * Proj).Transpose();
         constants.CameraPosition = CameraPosition;
         constants.Light = Light;
+        constants.RenderingMethod = RenderingMethod;
 
         m_rootSignature.SetCBV(cl, 0, 0, constants);
 

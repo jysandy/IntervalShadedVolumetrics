@@ -15,7 +15,11 @@ float SampleOpticalThickness(float3 worldPosition)
     transformed /= transformed.w;
     float3 uvw = transformed.xyz;
     
-    uvw.xy = 1 - uvw.xy; // why is this necessary?
+    // If not using sphere proxies
+    if (g_RenderingMethod != 4)
+    {
+        uvw.xy = 1 - uvw.xy; // why is this necessary?
+    }
     
     // Z should already be linear since the projection is orthographic
     return VolumetricShadowMap.Sample(LinearSampler, uvw);

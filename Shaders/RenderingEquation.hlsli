@@ -68,7 +68,8 @@ float FadedOpticalThickness(
     float d,
     float cosAlpha,
     float sigma,
-    float u
+    float u,
+    SamplerState linearSampler
 )
 {
     float d2 = d * d;
@@ -83,7 +84,7 @@ float FadedOpticalThickness(
     float secondExp = fiveRoot2 * (d * cosAlpha - z + zmin) / u;
     float thirdExp = (50 * d2 * cosAlpha * cosAlpha - 50 * d2) / u2;
     
-    float ot = prefix * (erf(firstExp) - erf(secondExp)) * exp(thirdExp);
+    float ot = prefix * (erf(firstExp, linearSampler) - erf(secondExp, linearSampler)) * exp(thirdExp);
     if (ot < 0.0005)
     {
         return 0;
@@ -98,10 +99,11 @@ float FadedTransmittanceTv2(
     float d,
     float cosAlpha,
     float sigma,
-    float u
+    float u,
+    SamplerState linearSampler
 )
 {
-    return exp(-FadedOpticalThickness(zmin, z, d, cosAlpha, sigma, u));
+    return exp(-FadedOpticalThickness(zmin, z, d, cosAlpha, sigma, u, linearSampler));
 }
 
 float Sigma_t(
@@ -149,9 +151,10 @@ float f(float x,
     float cosAlpha,
     float sigma,
     float u,
-    float visibility)
+    float visibility,
+    SamplerState linearSampler)
 {
-    float t_v = FadedTransmittanceTv2(zmin, x, d, cosAlpha, sigma, u);
+    float t_v = FadedTransmittanceTv2(zmin, x, d, cosAlpha, sigma, u, linearSampler);
     float sigma_t = Sigma_t(zmin, x, d, cosAlpha, sigma, u);
     float t_l = T_L(zmin, x, zmax, omin, omax);
 
@@ -174,7 +177,8 @@ float Derivative(uint n, float x,
     float d,
     float cosAlpha,
     float sigma,
-    float u)
+    float u,
+    SamplerState linearSampler)
 {
     const float h = 0.001;
     
@@ -197,7 +201,8 @@ float Derivative(uint n, float x,
             cosAlpha,
             sigma,
             u,
-            1 // TODO: pass visibility through
+            1, // TODO: pass visibility through
+            linearSampler
         );
         
         difference += sign * PascalsTriangle[n][i] * foo;
@@ -231,7 +236,8 @@ float TaylorSeriesAntiderivative(uint count, float evaluationPoint, float expans
     float d,
     float cosAlpha,
     float sigma,
-    float u)
+    float u,
+    SamplerState linearSampler)
 {
     float integral = f(expansionPoint,
         zmin,
@@ -242,7 +248,8 @@ float TaylorSeriesAntiderivative(uint count, float evaluationPoint, float expans
         cosAlpha,
         sigma,
         u,
-        1 // TODO: pass visibility through    
+        1, // TODO: pass visibility through    
+        linearSampler
         ) * evaluationPoint;
     
     
@@ -258,7 +265,8 @@ float TaylorSeriesAntiderivative(uint count, float evaluationPoint, float expans
                 d,
                 cosAlpha,
                 sigma,
-                u);
+                u,
+                linearSampler);
         
         nFactorial *= n;
         
@@ -284,7 +292,8 @@ void TaylorSeriesCoefficients(out float coefficients[5], uint count, float expan
     float d,
     float cosAlpha,
     float sigma,
-    float u)
+    float u,
+    SamplerState linearSampler)
 {
     coefficients[0] = f(expansionPoint,
         zmin,
@@ -295,7 +304,8 @@ void TaylorSeriesCoefficients(out float coefficients[5], uint count, float expan
         cosAlpha,
         sigma,
         u,
-        1 // TODO: pass visibility through
+        1, // TODO: pass visibility through
+        linearSampler
         );
     
     
@@ -311,7 +321,8 @@ void TaylorSeriesCoefficients(out float coefficients[5], uint count, float expan
                 d,
                 cosAlpha,
                 sigma,
-                u);
+                u,
+                linearSampler);
         
         nFactorial *= n;
     
@@ -341,7 +352,8 @@ float IntegrateTaylorSeries(uint count,
     float d,
     float cosAlpha,
     float sigma,
-    float u
+    float u,
+    SamplerState linearSampler
 )
 {
     float expansionPoint = (zmin + zmax) / 2.f;
@@ -356,7 +368,8 @@ float IntegrateTaylorSeries(uint count,
         d,
         cosAlpha,
         sigma,
-        u
+        u,
+        linearSampler
     );
     
     float upperLimit = EvaluateTaylorIntegralCoefficients(coefficients, count, zmax, expansionPoint);

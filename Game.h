@@ -36,6 +36,7 @@ class Game final : public DX::IDeviceNotify
 public:
     const float BrightnessScale = 10.f;
     const int MaxParticles = 65535;
+    const int ERF_TEXTURE_WIDTH = 512;
 
     enum class RenderingMethod : int
     {
@@ -151,6 +152,7 @@ private:
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
     void CreateTetrahedronInstances();
+    void CreateErfLookupTexture();
 
     void SimulateParticles(ID3D12GraphicsCommandList6* cl, const Constants& constants);
     void WriteSortingKeys(ID3D12GraphicsCommandList6* cl, const Constants& constants);
@@ -245,7 +247,7 @@ private:
     RenderingMethod m_guiRenderingMethod = RenderingMethod::SphericalProxy;
     int m_guiStepCount = 2;
     float m_guiMultiScatteringFactor = 0.5;
-    float m_guiReflectivity;
+    float m_guiReflectivity = 0;
 
     bool m_guiAnimateProps = true;
 
@@ -260,4 +262,7 @@ private:
     FfxInterface m_ffxInterface;
     FfxParallelSortContext m_parallelSortContext;
 
+    // ERF texture for optimized error function lookup
+    Gradient::BarrierResource m_erfTexture;
+    Gradient::GraphicsMemoryManager::DescriptorView m_erfTextureSRV;
 };

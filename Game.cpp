@@ -345,7 +345,7 @@ void Game::RenderParticles(ID3D12GraphicsCommandList6* cl,
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    m_erfTexture.Transition(cl, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    m_erfTexture.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 
     m_particleRS.SetOnCommandList(cl);
 
@@ -393,7 +393,7 @@ void Game::RenderVolumetricShadows(ID3D12GraphicsCommandList6* cl,
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
     bm->GetInstanceBuffer(m_tetIndices)->Resource.Transition(
         cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-    m_erfTexture.Transition(cl, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    m_erfTexture.Transition(cl, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 
     m_particleRS.SetStructuredBufferSRV(cl, 0, 0, m_tetInstances);
     m_particleRS.SetStructuredBufferSRV(cl, 1, 0, m_tetIndices);
@@ -1056,6 +1056,7 @@ void Game::CreateDeviceDependentResources()
 
     ThrowIfFfxFailed(ffxParallelSortContextCreate(&m_parallelSortContext, &contextDesc));
 
+    CreateTetrahedronInstances();
     CreateErfLookupTexture();
 }
 
@@ -1182,9 +1183,6 @@ void Game::CreateErfLookupTexture()
     textureData.SlicePitch = textureData.RowPitch;
 
     uploadBatch.Upload(m_erfTexture.Get(), 0, &textureData, 1);
-    uploadBatch.Transition(m_erfTexture.Get(),
-        D3D12_RESOURCE_STATE_COPY_DEST,
-        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
     auto uploadFinished = uploadBatch.End(cq);
     uploadFinished.wait();

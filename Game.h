@@ -247,7 +247,7 @@ private:
     RenderingMethod m_guiRenderingMethod = RenderingMethod::SphericalProxy;
     int m_guiStepCount = 2;
     float m_guiMultiScatteringFactor = 0.5;
-    float m_guiReflectivity;
+    float m_guiReflectivity = 0;
 
     bool m_guiAnimateProps = true;
 

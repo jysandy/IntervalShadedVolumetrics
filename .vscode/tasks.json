@@ -27,6 +27,32 @@
             ],
             "group": "build",
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "IntervalShadedVolumetrics.sln",
+                "/t:Clean",
+                "/p:Configuration=Debug",
+                "/p:Platform=x64"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "clean release",
+            "type": "shell",
+            "command": "msbuild",
+            "args": [
+                "IntervalShadedVolumetrics.sln",
+                "/t:Clean",
+                "/p:Configuration=Release",
+                "/p:Platform=x64"
+            ],
+            "group": "build",
+            "problemMatcher": "$msCompile"
         }
     ]
 }

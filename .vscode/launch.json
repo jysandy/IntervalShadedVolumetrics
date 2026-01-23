@@ -8,9 +8,14 @@
             "program": "${workspaceFolder}/x64/Debug/IntervalShadedVolumetrics.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/x64/Debug",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "${workspaceFolder}/x64/Debug;${workspaceFolder}/x64/Debug/D3D12;${workspaceFolder}/vendor/FidelityFX-SDK-1.1.4/sdk/bin/ffx_sdk;${workspaceFolder}/vcpkg_installed/x64-windows-static-md/bin;${env:PATH}"
+                }
+            ],
+            "console": "internalConsole",
             "preLaunchTask": "build debug"
         },
         {
@@ -20,9 +25,14 @@
             "program": "${workspaceFolder}/x64/Release/IntervalShadedVolumetrics.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/x64/Release",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "${workspaceFolder}/x64/Release;${workspaceFolder}/x64/Release/D3D12;${workspaceFolder}/vendor/FidelityFX-SDK-1.1.4/sdk/bin/ffx_sdk;${workspaceFolder}/vcpkg_installed/x64-windows-static-md/bin;${env:PATH}"
+                }
+            ],
+            "console": "internalConsole",
             "preLaunchTask": "build release"
         }
     ]

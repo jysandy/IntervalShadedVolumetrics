@@ -151,6 +151,10 @@
       <EnableDebuggingInformation>true</EnableDebuggingInformation>
       <AdditionalOptions>/Fd "$(OutDir)%(Filename).pdb" %(AdditionalOptions)</AdditionalOptions>
     </FXCompile>
+    <PostBuildEvent>
+      <Command>if exist "$(WindowsSdkBinPath)\x64\WinPixEventRuntime.dll" copy /y "$(WindowsSdkBinPath)\x64\WinPixEventRuntime.dll" "$(OutDir)"
+    if exist "%ProgramFiles%\Microsoft PIX\WinPixEventRuntime.dll" copy /y "%ProgramFiles%\Microsoft PIX\WinPixEventRuntime.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
     <CustomBuildStep>
       <Message>
       </Message>
@@ -223,6 +227,10 @@ copy "$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\debug
       <EnableDebuggingInformation>true</EnableDebuggingInformation>
       <AdditionalOptions>/Fd "$(OutDir)%(Filename).pdb" %(AdditionalOptions)</AdditionalOptions>
     </FXCompile>
+    <PostBuildEvent>
+      <Command>if exist "$(WindowsSdkBinPath)\x64\WinPixEventRuntime.dll" copy /y "$(WindowsSdkBinPath)\x64\WinPixEventRuntime.dll" "$(OutDir)"
+    if exist "%ProgramFiles%\Microsoft PIX\WinPixEventRuntime.dll" copy /y "%ProgramFiles%\Microsoft PIX\WinPixEventRuntime.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
     <CustomBuildStep>
       <Message>
       </Message>

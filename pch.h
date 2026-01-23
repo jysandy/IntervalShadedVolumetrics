@@ -78,6 +78,7 @@ template<typename T>
 inline void PIXEndEvent(T*) {}
 #else
 // WinPixEvent Runtime
+#define USE_PIX 1
 #include <pix3.h>
 #endif
 

@@ -287,7 +287,8 @@ void ComputeWastedPixelsEquation(out float3 Cscat, out float Tv,
     float3 minpoint,
     float3 maxpoint,
     float3 centrePos,
-    float extinction
+    float extinction,
+    float scale
     )
 {
     Cscat = 0.xxx;
@@ -306,7 +307,7 @@ void ComputeWastedPixelsEquation(out float3 Cscat, out float Tv,
     float d = length(centrePos - minpoint);
     float cosAlpha = clamp(dot(-V, toCentre), -1, 1);
     
-    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius, LinearSampler);
+    float ot = FadedOpticalThickness(Zmin, Zmax, d, cosAlpha, extinction, g_ExtinctionFalloffRadius * scale, LinearSampler);
     
     if (ot > MIN_OT)
     {
@@ -367,7 +368,7 @@ BlendOutput Interval_PS(VertexType input)
     }
     else if (g_RenderingMethod == 3)
     {
-        ComputeWastedPixelsEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction);
+        ComputeWastedPixelsEquation(Cscat, Tv, a.xyz, b.xyz, input.WorldPosition, extinction, input.Scale);
     }
     
     ret.Color = float4(Cscat, Tv);
